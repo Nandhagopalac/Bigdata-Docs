@@ -1,0 +1,197 @@
+
+
+ Azure Testing Handbook
+Version No: 1.0
+
+
+
+
+
+
+
+
+	Name 	Role	Signature	Date
+Prepared By / Last Updated By	Karthik Babu	Sr.Test Analyst		  08/27/2019
+Reviewed By	Nandha Gopal	Test Manager		08/28/2019
+Approved By				
+ 
+Table of Contents
+
+1.0	Azure Overview	3
+1.1	Azure Components/Utilities	3
+2.0	Azure and its Ecosystem	3
+2.1	What is Azure?	3
+2.1.1	Architecture	4
+2.2	Azure Components	6
+3.0	Azure Testing	6
+3.1	Azure-Smoke Testing	7
+3.2	Azure-Data Testing:	7
+3.3	Non Functional Testing:	8
+3.3.1	Performance Testing	8
+3.3.2	Failover Testing	9
+4.0	APPENDIX	10
+4.1	Some useful Queries/Commands:	10
+4.1.1	Connect checks	10
+4.1.2	Duplicate Check Validation:	10
+4.1.3	Count Check Validation:	10
+4.1.4	NULL CHECK:	10
+4.2	Some useful Azure COMMANDS/TIPS:	11
+
+
+
+
+
+
+
+
+
+ 
+1.0	Azure Overview
+Microsoft Azure is Microsoft's public cloud computing platform. It provides a range of cloud services, including those for compute, analytics, storage and networking. Users can choose from these services to develop and scale new applications, or run existing applications, in the public cloud. Azure is an ever-expanding set of cloud computing services to help organizations meet its business challenges.
+
+1.1	Azure Components/Utilities
+Azure offers many services in its cloud-computing platform. These services include the following.
+•	Compute services
+•	Data services
+•	Application services
+•	Network services
+2.0	Azure and its Ecosystem
+2.1	What is Azure?
+Microsoft Azure is an open and flexible cloud platform that serves as the development, data storing, service hosting and service management environment. Microsoft Azure provides developers with on-demand compute and storage to host, scale, and manage web applications on the internet through Microsoft data centers.
+Microsoft Azure offers Platform as a Service (PaaS) and Infrastructure as a Service (IaaS).
+PaaS (Platform as a Service)
+•	It allows developers to build applications, collaborate on projects without having to purchase or maintain infrastructure.
+IaaS (Infrastructure as a Service)
+•	It allows companies to rent servers, storage space, etc. from a cloud provider.
+ 
+
+2.1.1	Architecture
+      Following are the architecture representations of Microsoft Azure platform
+ 
+
+ 
+On Premises to Azure Migration high-level architecture:
+
+ 
+
+
+
+2.2	Azure Components
+Following diagram represents the different components and utilities of Azure platform
+
+
+ 
+
+3.0	Azure Testing
+Following Types of Testing performed as part of Azure Testing.
+
+•	Azure-Smoke Testing
+•	Azure migration Testing
+•	Non-Functional Testing
+	Performance Testing
+	Fail over Testing
+ 
+
+3.1	Azure-Smoke Testing
+Upon successful deployment of the scripts in Azure Cloud environment, test team will conduct smoke testing to ensure the application behaves the same way as it used to be in on-premise server includes connectivity, configuration set up and make sure the stability of environment to kick start the testing.
+Smoke Testing 
+Entry Criteria		Test environment should be available with unit tested code deployed 
+	Database should be created and connected in Cloud
+	Test design should be completed and signed off
+	All source configuration details currently pointed in on-premise.
+Validations		Application smoke testing will be performed
+	Validating Connectivity establishment between on-premise and Azure data centers including on-premise source table connection from Cloud
+	Validation of table structures and script executions
+	Validating Extraction of sample table source
+Dependencies		Access to source database servers and share Path
+	Dedicated account for connectivity check and data extraction
+Exit Criteria		Successful completion of Planned tests by the test team
+	Test evidences should be shared and signed off
+Deliverable		Test Evidence document
+
+
+
+
+
+
+
+
+
+
+3.2	Azure-Data Testing:
+Following are the Test process activities for Azure-Data Testing.
+Azure Data Testing 
+Entry Criteria		Applications are clearly classified and finalized
+	Connectivity established across locations – Network firewall / SSH connections for all upstream and downstream locations
+	Test Data availability
+	Smoke testing completed
+	Signed off Test Strategy 
+	User roles set up as of existing Data Centre
+	Unit testing completion and evidences available
+Validations		Validating record count between the tables/files present in source (on-premise) environment and target (Azure) environment.
+	Validating data between the tables/files in source (on-premise) environment and target (Azure) environment.
+	Metadata Validation
+	Validating Duplicate and Null values between the data present in source (on-premise) environment and target (Azure) environment.
+	Validating partition size between Hive(Hadoop) tables present in source (on- premise) environment and target (Azure) environment
+	Validating audit column across tables and layers
+	Validating log files availability and required touch file creations for each application and highlighting if any impact for downstream applications in Azure environment.
+	Validating extracts availability placed in file path in Azure environment.
+	Validating the target result sets of each application
+	Validating all extracts generated from application result sets 
+	Validating of priority reports/dashboards pointed to Cloud
+	Validating reject/error records capture with the valid reason in reject file/table in Azure Environment.
+Dependencies		Admin team should provide the necessary access to both the Data Centers
+	Availability of Support team and SMEs to sign off the test results
+	Priority reports for validations should be confirmed by the stakeholders
+	Connectivity should be established to both the DCs through test accelerator
+	All the pre-requisites for deploying the accelerator should be satisfied
+	Availability of Business users to perform UAT and Sign off
+Exit Criteria		Test execution status and evidence from test accelerator used for validation
+	No outstanding issues/defects upon successful completion of test in-scope
+Deliverable		Test Evidences and snapshots for each test scenario
+
+3.3	Non-Functional Testing:
+3.3.1	Performance Testing
+Performance testing plays a major part in Azure testing. Following validations will be performed.
+•	Comparison of job execution time with the base lined value between source (on-premise) environment and target (Azure) environment.
+•	Validating execution benchmark and server statistics between source (on-premise) environment and target (Azure) environment.
+•	Validating the data insertion rate (i.e. how fast the system consumes data) between source (on-premise) environment and target (Azure) environment.
+•	Validating the data retrieval rate (i.e how fast the queries are processed while the data is being read) between source (on-premise) environment and target (Azure) environment.
+
+
+3.3.2	Failover Testing
+Fault tolerance and business continuity are essentials for successful organizations. They should be able to recover from the outages caused by natural disasters or due to operational failures with minimum downtime.
+Azure Site Recovery (ASR) is a DRaaS (Disaster Recovery As A Solution) offered by Azure for use in cloud and hybrid cloud architectures. As a disaster recovery platform, it makes it possible for Azure Virtual Machines, Hyper-V, physical on-prem systems, and VMWare to failover to and successfully failback once the disaster has been resolved.
+
+
+ 
+ 
+4.0	APPENDIX
+4.1	Some useful Queries/Commands:
+4.1.1	Connect checks
+Sample Query/Command:-
+ssh -o ServerAliveInterval=30 Azure edgenode (azsu-p-xx-yy001.azure.xx.xxxxxx.com)
+4.1.2	Duplicate Check Validation:
+Sample Query/Command:-
+
+beeline -u "jdbc:hive2://azsu-x-xxxx-mn-003.azure.xx.xxxxxxxx.com:10000/;principal=hive/ azsu-x-xxxx-mn-003.azure.xx.xxxxxxxx.com @HADOOP.xxxxxxxx;" --hiveconf hive.execution.engine=tez --showHeader=false --outputformat=tsv2 -e "select var1, var2,count(*) from target table where datestamp='YYYY-MM-DD' group by var1,var2 having count(*) > 1;"
+
+4.1.3	Count Check Validation:
+Sample Query/Command:-
+beeline -u "jdbc:hive2://azsu-x-xxxx-mn-003.azure.xx.xxxxxxxx.com:10000/;principal=hive/ azsu-x-xxxx-mn-003.azure.xx.xxxxxxxx.com @HADOOP.xxxxxxxx;" --hiveconf hive.execution.engine=tez --showHeader=false --outputformat=tsv2 -e "select count(*) from target table where datestamp='YYYY-MM-DD'  "
+
+4.1.4	NULL CHECK:
+Sample Query/Command:-
+beeline -u "jdbc:hive2://azsu-x-xxxx-mn-003.azure.xx.xxxxxxxx.com:10000/;principal=hive/ azsu-x-xxxx-mn-003.azure.xx.xxxxxxxx.com @HADOOP.xxxxxxxx;" --hiveconf hive.execution.engine=tez --showHeader=false --outputformat=tsv2 -e "select * from target table where datestamp='YYYY-MM-DD'  and pk_var IS NULL;"
+
+
+4.2	Some useful Azure COMMANDS/TIPS:
+Azure connectivity validation using SSH command:
+Step-1: Login into UNIX box (putty)
+Step-2: after successful login, enter below command 
+ssh -o ServerAliveInterval=30 Azure edgenode (azsu-p-xx-yy-001.azure.xx.xxxxxx.com)
+Step-3: After successful login, beeline command is used to execute the queries/commands.
+beeline -u "jdbc:hive2://azsu-x-xxxx-mn-003.azure.xx.xxxxxxxx.com:10000/;principal=hive/ azsu-x-xxxx-mn-003.azure.xx.xxxxxxxx.com @HADOOP.xxxxxxxx;" --hiveconf hive.execution.engine=tez --showHeader=false --outputformat=tsv2 -e "select var1, var2, count(*) from target table where tech_datestamp='YYYY-MM-DD' group by var1,var2 having count(*) > 1;"
+
+
+
