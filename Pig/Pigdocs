@@ -1,0 +1,255 @@
+Scripting language;
+
+Local mode and map reduce mode
+
+Pig â€“x local | Pig â€“x MapReduce or pig
+
+No need of defining meta data ($0,$1,$2,$3â€¦$n)
+
+Bag-collection of tuples
+
+Tuples-records
+
+Element-atom
+
+>grunt shell
+
+Yahoo has developed
+
+Data will not store anywhere in the system. Everything will be stored in temp variable
+
+Byte array â€“default storageâ€¦
+
+Collection of touples = Bags..
+
+Flatten Operator	Flatten un-nests tuples as well as bags	consider a relation that has a tuple of the form (a, (b, c)). The expression GENERATE $0, flatten($1), will cause that tuple to become (a, b, c).
+sample daa;
+teleman.pr.mcs.net,-,-,[01/Jul/2005:00:03:57,-0400],"GET,/images/KSC-logosmall.gif,HTTP/1.0",304,0teleman.pr.mcs.net,-,-,[01/Jul/2005:00:03:57,-0400],"GET,/images/KSC-logosmall.gif,HTTP/1.0",304,0
+
+ It consists of the user IP address, time at which the request is received, timezone, request type, requested link, request details, response code and bytes transferred. 
+
+data = LOAD '/sample_log' using PigStorage(',') AS (ip_add:chararray,temp1:chararray,temp2:chararray,timestamp:chararray,time_zone:chararray,req_type:chararray,req_link:chararray,req_det:chararray,res_code:int,bytes:int);
+
+grunt> time_data = GROUP data BY timestamp ;
+grunt> DESCRIBE time_data;
+
+time_data: {group: chararray,data: {(ip_add: chararray,temp1: chararray,temp2: chararray,timestamp: chararray,time_zone: chararray,req_type: chararray,req_link: chararray,req_det: chararray,res_code: int,bytes: int)}} 
+
+grunt> byte_count = FOREACH time_data GENERATE group AS 
+                    timestamp,SUM(data.bytes) as total_bytes ;
+
+ip_data = GROUP data BY ip_add ; 
+ip_count = FOREACH ip_data GENERATE group AS 
+           timestamp,COUNT(data) as total_visits ;
+
+grunt> sort_data = RANK ip_count BY total_visits DESC ;
+grunt> DUMP sort_data ;
+
+====================
+
+001,Rajiv,Reddy,21,9848022337,Hyderabad 
+002,siddarth,Battacharya,22,9848022338,Kolkata
+003,Rajesh,Khanna,22,9848022339,Delhi 
+004,Preethi,Agarwal,21,9848022330,Pune 
+005,Trupthi,Mohanthy,23,9848022336,Bhuwaneshwar 
+006,Archana,Mishra,23,9848022335,Chennai 
+007,Komal,Nayak,24,9848022334,trivendram 
+008,Bharathi,Nambiayar,24,9848022333,Chennai
+
+student = LOAD 'hdfs://localhost:9000/pig_data/student_details.txt' USING PigStorage(',')
+   as (id:int, firstname:chararray, lastname:chararray, phone:chararray, city:chararray);
+	
+student_order = ORDER student BY age DESC;
+  
+student_limit = LIMIT student_order 4;
+  
+Dump student_limit;
+
+A = load '/user/cloudera/pig/a.txt' USING PigStorage(',') as (id:int, firstname:chararray, lastname:chararray,age:int, phone:chararray, city:chararray);
+B = load '/user/cloudera/pig/b.txt' USING PigStorage(',') as (id:int, firstname:chararray, lastname:chararray,age:int, phone:chararray, city:chararray);
+C = GROUP B BY age;
+D = foreach C generate group,SUM(B.age);
+E = filter B BY age==21;
+G = GROUP B ALL;
+I = GROUP B BY (age,city);
+((21,Pune ),{(4,Preethi,Agarwal,21,9848022330,Pune ),(4,Preethi,Agarwal,21,9848022330,Pune )})
+((21,Hyderabad ),{(1,Rajiv,Reddy,21,9848022337,Hyderabad ),(1,Rajiv,Reddy,21,9848022337,Hyderabad )})
+((22,Delhi ),{(3,Rajesh,Khanna,22,9848022339,Delhi ),(3,Rajesh,Khanna,22,9848022339,Delhi )})
+((22,Kolkata),{(2,siddarth,Battacharya,22,9848022338,Kolkata),(2,siddarth,Battacharya,22,9848022338,Kolkata)})
+((23,Chennai ),{(6,Archana,Mishra,23,9848022335,Chennai ),(6,Archana,Mishra,23,9848022335,Chennai )})
+((23,Bhuwaneshwar ),{(5,Trupthi,Mohanthy,23,9848022336,Bhuwaneshwar ),(5,Trupthi,Mohanthy,23,9848022336,Bhuwaneshwar )})
+((24,Chennai),{(8,Bharathi,Nambiayar,24,9848022333,Chennai),(8,Bharathi,Nambiayar,24,9848022333,Chennai)})
+((24,trivendram ),{(7,Komal,Nayak,24,9848022334,trivendram ),(7,Komal,Nayak,24,9848022334,trivendram )})
+((48,bangalore),{(220,Bharathi,Nambiayar,48,9848022333,bangalore)})
+H = FOREACH I GENERATE FLATTEN(group) as (age,city);
+(21,Pune )
+(21,Hyderabad )
+(22,Delhi )
+(22,Kolkata)
+(23,Chennai )
+(23,Bhuwaneshwar )
+(24,Chennai)
+(24,trivendram )
+(48,bangalore)
+H = COGROUP C by group,B by id;
+
+(1,{},{(1,Rajiv,Reddy,21,9848022337,Hyderabad ),(1,Rajiv,Reddy,21,9848022337,Hyderabad )})
+(2,{},{(2,siddarth,Battacharya,22,9848022338,Kolkata),(2,siddarth,Battacharya,22,9848022338,Kolkata)})
+(3,{},{(3,Rajesh,Khanna,22,9848022339,Delhi ),(3,Rajesh,Khanna,22,9848022339,Delhi )})
+(4,{},{(4,Preethi,Agarwal,21,9848022330,Pune ),(4,Preethi,Agarwal,21,9848022330,Pune )})
+(5,{},{(5,Trupthi,Mohanthy,23,9848022336,Bhuwaneshwar ),(5,Trupthi,Mohanthy,23,9848022336,Bhuwaneshwar )})
+(6,{},{(6,Archana,Mishra,23,9848022335,Chennai ),(6,Archana,Mishra,23,9848022335,Chennai )})
+(7,{},{(7,Komal,Nayak,24,9848022334,trivendram ),(7,Komal,Nayak,24,9848022334,trivendram )})
+(8,{},{(8,Bharathi,Nambiayar,24,9848022333,Chennai),(8,Bharathi,Nambiayar,24,9848022333,Chennai)})
+(21,{(21,{(1,Rajiv,Reddy,21,9848022337,Hyderabad ),(4,Preethi,Agarwal,21,9848022330,Pune ),(1,Rajiv,Reddy,21,9848022337,Hyderabad ),(4,Preethi,Agarwal,21,9848022330,Pune )})},{})
+(22,{(22,{(2,siddarth,Battacharya,22,9848022338,Kolkata),(3,Rajesh,Khanna,22,9848022339,Delhi ),(3,Rajesh,Khanna,22,9848022339,Delhi ),(2,siddarth,Battacharya,22,9848022338,Kolkata)})},{})
+(23,{(23,{(6,Archana,Mishra,23,9848022335,Chennai ),(5,Trupthi,Mohanthy,23,9848022336,Bhuwaneshwar ),(6,Archana,Mishra,23,9848022335,Chennai ),(5,Trupthi,Mohanthy,23,9848022336,Bhuwaneshwar )})},{})
+(24,{(24,{(7,Komal,Nayak,24,9848022334,trivendram ),(8,Bharathi,Nambiayar,24,9848022333,Chennai),(8,Bharathi,Nambiayar,24,9848022333,Chennai),(7,Komal,Nayak,24,9848022334,trivendram )})},{})
+(48,{(48,{(220,Bharathi,Nambiayar,48,9848022333,bangalore)})},{})
+(220,{},{(220,Bharathi,Nambiayar,48,9848022333,bangalore)})
+
+==============
+
+(www.ccc.com,www.hjk.com)
+(www.ddd.com,www.xyz.org)
+(www.aaa.com,www.cvn.org)
+(www.www.com,www.kpt.net)
+(www.www.com,www.xyz.org)
+(www.ddd.com,www.xyz.org)
+
+A = load '/user/pig/s.txt' Using PigStorage (',') AS (url:chararray,outline:chararray);
+
+H = load '/home/cloudera/pig_1502950808840.log' Using PigStorage ();
+
+B = GROUP A BY url;
+
+X = foreach B {FA= FILTER A BY outlink == 'www.xyz.org';
+        PA = FA.outlink;
+        DA = DISTINCT PA;
+        GENERATE GROUP, COUNT(DA);}
+
+ILLUSTRATE X;
+===============
+
+JSON data for pig;
+
+{â€nameâ€: â€nandhaâ€, â€ageâ€: â€32â€}
+{â€nameâ€: â€lalithaâ€, â€ageâ€: â€30â€}
+{â€nameâ€: â€Mercyâ€, â€ageâ€: â€28â€}
+
+Advance JSON data;
+
+A = LOAD '/user/cloudera/pig/a.json' USING JsonLoader('recipe:chararray,ingredients: {(name:bytearray)},inventor: (name1:chararray, age:int)');
+DESCRIBE A;
+B = LOAD '/user/cloudera/pig/b.json' USING JsonLoader('recipe:chararray,ingredients: {(name:bytearray)},inventor: (name1:chararray, age:int)');
+MM = GROUP B ALL;
+C = FILTER A BY inventor.name1 in ('Steve','Alex');
+D1 = order C BY name1;
+E = LIMIT B BY 1;
+M = FOREACH A GENERATE recipe,ingredients.name;
+store B into '/user/cloudera/pig' USING PigDump();
+SPLIT A INTO A1 IF (incrediants.rice ==â€™150grâ€™), A2 IF (incrediants.rice!= â€™150grâ€™);
+
+F = JOIN A by inventor.age,B by inventor.age;
+G = GROUP B BY recipe;
+F1 = cogroup G by group,B by recipe
+
+DUMP F;
+
+F = JOIN A by inventor.age LEFT OUTER ,B by inventor.age;
+
+DUMP F;
+F = JOIN A by inventor.age RIGHT OUTER ,B by inventor.age;
+
+DUMP F;
+
+F = JOIN A by inventor.age FULL OUTER ,B by inventor.age;
+
+DUMP F;
+
+H = FOREACH G GENERATE group, SUM (incrediants.rice);
+
+Advance Join in Pig;
+
+Replicated
+
+Before we start, its important to remember that Pig is an abstraction over top of MapReduce jobs that do the actual heavy lifting. So, when you typically join together two big setâ€™s of data that can be fragmented or distributed across multiple machines, its necessary for a reducer to sort the data before it can be joined. In scenarios, where you are joining one big set of data to a small(er) set of data this can be especially inefficient, particularly if the smaller set of data will fit within memory on the data/compute nodes. Letâ€™s look at an example using a customer transaction data set, which could potentially have billions of rows that is joined to a smaller geography data set.
+
+F = JOIN A by incrediants.rice, B by incrediants.rice USING â€œreplicatedâ€
+
+Merge
+
+Occasionally, the data sets you are interested in joining are pre-sorted. Since the sort operation in the underlying MapReduce jobs is an expensive process it can be avoid and the two sets can be joined in a efficient and economical method. Behind the scenes, much like a Skewed join, a prep MapReduce job is run to create an index of each join key at the beginning of each split block. During the join, records are either matched or discarded. No safety check is done to ensure the data is indeed sorted. The syntax for this join operation is listed below:
+
+F = JOIN A by incrediants.rice, B by incrediants.rice USING â€œmergeâ€
+
+Skewed
+
+A second scenario that happens frequently in these joins results from that is data unbalance or skewed around the join keys. To better illustrate this concept, we can revisit the example above. To make this example work, we will assume that our geography set no longer fits within memory and that the bulk of our customer transactions happen in the state of Florida (United States). Using the same initial example from above, would result in a majority of the transactions data being sent to a single reducer, while other reducers handling other states/regions have little (by comparison) work to do. These other reducers would finish quickly, with the bottleneck being the single reducer handling the state of Florida transactions. This is called skew.
+
+The skewed join in Pig handles this scenario, by pre-sampling the data using a preliminary MapReduce. During the pre-sampling, Pig uses its algorithms to identifies keys which have data that is skewed. The skewed data will be automatically split the set across multiple reducers. A second MapReduce job is then run to perform the actual join.
+
+F = JOIN A by incrediants.rice, B by incrediants.rice USING â€œskewedâ€
+
+XML data for PIG;
+
+<?xml version="1.0"?>
+<catalog>
+      <large-product>
+         <name>foo1</name>
+         <price>110</price>
+      </large-product>
+      <large-product>
+         <name>foo2</name>
+         <price>120</price>
+      </large-product>
+      <large-product>
+         <name>foo3</name>
+         <price>130</price>
+      </large-product>
+      <large-product>
+         <name>foo4</name>
+         <price>140</price>
+      </large-product>
+      <large-product>
+         <name>foo5</name>
+         <price>150</price>
+      </large-product>
+      <small-product>
+         <name>bar1</name>
+         <price>10</price>
+      </small-product>
+      <small-product>
+         <name>bar2</name>
+         <price>20</price>
+      </small-product>
+      <small-product>
+         <name>bar3</name>
+         <price>30</price>
+      </small-product>
+      <small-product>
+         <name>bar4</name>
+         <price>40</price>
+      </small-product>
+      <small-product>
+         <name>bar5</name>
+         <price>50</price>
+      </small-product>
+</catalog>
+
+===================
+
+register '/usr/lib/pig/piggybank.jar';
+A = LOAD '/user/cloudera/pig/w.xml' USING org.apache.pig.piggybank.storage.XMLLoader('small-product') AS (doc:chararray);
+clean = foreach A GENERATE FLATTEN(REGEX_EXTRACT_ALL(doc,'<small-product>\\s*<name>(.*)</name>\\s*<price>(.*)</price>\\s*</small-product>')) AS (name:chararray,price:int);
+store clean into '/user/cloudera/pig/xml';
+=============================
+
+REGISTER /home/cloudera/Downloads/piggybank-0.16.0.jar
+
+A =  LOAD '/user/cloudera/pig/w.xml' using org.apache.pig.piggybank.storage.XMLLoader('foo') as (x:chararray);
+
+B = FOREACH A GENERATE XPath(x, 'foo/Number'), XPath(x, 'foo/childfoo');
+
+dump B;
+ 
