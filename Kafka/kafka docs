@@ -1,0 +1,286 @@
+A Messaging System is responsible for transferring data from one application to another, so the applications can focus on data, but not worry about how to share it. Distributed messaging is based on the concept of reliable message queuing. Messages are queued asynchronously between client applications and messaging system. Two types of messaging patterns are available ? one is point to point and the other is publish-subscribe (pub-sub) messaging system. Most of the messaging patterns follow pub-sub
+
+Kafka has better throughput, built-in partitioning, replication and inherent fault-tolerance, which makes it a good fit for large-scale message processing applications.
+
+Reliability ? Kafka is distributed, partitioned, replicated and fault tolerance.
+
+Scalability ? Kafka messaging system scales easily without down time..
+
+Durability ? Kafka uses Distributed commit log which means messages persists on disk as fast as possible, hence it is durable..
+
+Performance ? Kafka has high throughput for both publishing and subscribing messages. It maintains stable performance even many TB of messages are stored.
+
+sudo gpasswd --add cloudera vboxsf
+sudo gpasswd --add cloudera vboxsf
+sudo usermod -a -G vboxsf cloudera
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+kafka install;
+
+Download Apache Zookeeper;
+http://apache.org/dist/zookeeper/stable/
+tar -xvf zookeeper-3.4.9.tar.gz
+
+vi conf/zoo.cfg
+
+tickTime=2000 #It is used to do heartbeats and the minimum session timeout will be twice the tickTime. The basic unit is milliseconds.
+dataDir=/var/zookeeper #Here is the directory where zookeeper save its data.
+clientPort=2181 #The port to listen for client connections.
+
+Start the Zookeeper server
+cd /opt/zookeeper-3.4.9
+sudo bin/zkServer.sh upgrade/stop/restart/upgrade
+jps
+
+The command to connect to the server:(optional)
+# Java
+bin/zkCli.sh 127.0.0.1:2181
+
+#C/C++
+LD_LIBRARY_PATH=. cli_mt 127.0.0.1:2181
+#or
+LD_LIBRARY_PATH=. cli_st 127.0.0.1:2181
+
+-------------------------------------------
+Failed to acquire lock on file .lock in /tmp/kafka-logs (delete below listed file)
+sudo rm -rf /tmp/kafka-logs
+
+[cloudera@quickstart zookeeper-3.4.9]$ lsof -i :9092
+[cloudera@quickstart zookeeper-3.4.9]$ kill -9 13793
+
+=================================================================
+
+Download Apache Kafka
+cd ~
+https://www.apache.org/dyn/closer.cgi?path=/kafka/0.10.2.0/kafka_2.11-0.10.2.0.tgz
+tar -xvf kafka_2.11-0.9.0.1.tgz
+sudo mv kafka_2.11-0.9.0.1 /opt
+
+
+Start the Kafka server
+sudo bin/kafka-server-start.sh config/server.properties
+If everything went successfully, you will see several messages about the Kafka server's status, and the last one will read:
+INFO [Kafka Server 0], started (kafka.server.KafkaServer)
+
+cd /opt/kafka_2.11-0.9.0.1
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 2 --topic retail143
+[cloudera@quickstart kafka_2.11-0.9.0.1]$ bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 2 --topic bankqq
+Created topic "bank".
+[cloudera@quickstart kafka_2.11-0.9.0.1]$ bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 2 --topic insurance
+Created topic "insurance".
+[cloudera@quickstart kafka_2.11-0.9.0.1]$ bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 2 --topic manafacture
+Created topic "manafacture".
+====================================================================
+a)You can view your topics with the following command:
+bin/kafka-topics.sh --list --zookeeper localhost:2181
+test
+
+b)Produce messages using the topic "test"
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic retail
+Welcome aboard!
+Bonjour!
+------------------------------------------------------------
+c)Display messages
+cd /opt/kafka_2.11-0.9.0.1
+bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic retail --from-beginning
+
+------------------------------------------------------------
+D)Delete topic's
+
+[cloudera@quickstart kafka_2.11-0.9.0.1]$ set delete.topic.enable=true
+set auto.create.topics.enable=false
+[cloudera@quickstart kafka_2.11-0.9.0.1]$ bin/kafka-topics.sh --zookeeper localhost:2181 --delete --topic banking
+Topic banking is already marked for deletion.
+------------------------------------------------------------
+1) Getting information about topic
+bin/kafka-topics.sh --describe --zookeeper localhost:2181
+------------------------------------------------------------
+2) Changing the partition count for topic;
+bin/kafka-topics.sh --alter --topic bank --partition 4 --zookeeper localhost:2181
+------------------------------------------------------------
+3) Changing the topic configuration;
+bin/kafka-topics.sh --alter --topic bank --config max.message.bytes=100000 --zookeeper localhost:2181
+
+====================================================================
+http://docs.confluent.io/3.2.0/quickstart.html# (usecase)**** Dealing with (avro file/Schema data)
+====================================================================
+
+Change the server properities from local host to actual hostname
+
+1)./bin/zookeeper-server-start ./etc/kafka/zookeeper.properties
+2)./bin/kafka-server-start ./etc/kafka/server.properties
+3)./bin/schema-registry-start ./etc/schema-registry/schema-registry.properties
+
+crete a Topic;
+
+./bin/kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 2 --topic retail143
+
+./bin/kafka-avro-console-producer \
+         --broker-list quickstart.cloudera:9092 --topic retail143 \
+         --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}'
+
+{"f1": "value1"}
+{"f1": "value2"}
+{"f1": "value3"}
+
+./bin/kafka-avro-console-consumer --topic retail143 \
+         --zookeeper quickstart.cloudera:2181 \
+         --from-beginning
+======================================================================
+SQL connector
+======================================================================
+A) First, startup a ZooKeeper server. In this guide
+
+./bin/zookeeper-server-start ./etc/kafka/zookeeper.properties
+
+./bin/kafka-server-start ./etc/kafka/server.properties
+
+./bin/schema-registry-start ./etc/schema-registry/schema-registry.properties
+
+4) echo -e "log line 1\nlog line 2" > test.txt
+
+5) ./bin/connect-standalone ./etc/schema-registry/connect-avro-standalone.properties \
+      ./etc/kafka/connect-file-source.properties
+
+-----
+/home/cloudera/kafka/confluent-3.2.0/etc/kafka
+[cloudera@quickstart kafka]$ ls -ltr
+total 60
+-rw-r--r-- 1 cloudera cloudera 1023 Feb 28 17:46 zookeeper.properties
+-rw-r--r-- 1 cloudera cloudera 1032 Feb 28 17:46 tools-log4j.properties
+-rw-r--r-- 1 cloudera cloudera 7184 Feb 28 17:46 server.properties
+-rw-r--r-- 1 cloudera cloudera 1900 Feb 28 17:46 producer.properties
+-rw-r--r-- 1 cloudera cloudera 4369 Feb 28 17:46 log4j.properties
+-rw-r--r-- 1 cloudera cloudera 1199 Feb 28 17:46 consumer.properties
+-rw-r--r-- 1 cloudera cloudera 2061 Feb 28 17:46 connect-standalone.properties
+-rw-r--r-- 1 cloudera cloudera 1074 Feb 28 17:46 connect-log4j.properties
+-rw-r--r-- 1 cloudera cloudera  881 Feb 28 17:46 connect-file-source.properties
+-rw-r--r-- 1 cloudera cloudera  883 Feb 28 17:46 connect-file-sink.properties
+-rw-r--r-- 1 cloudera cloudera 2760 Feb 28 17:46 connect-distributed.properties
+-rw-r--r-- 1 cloudera cloudera  909 Feb 28 17:46 connect-console-source.properties
+-rw-r--r-- 1 cloudera cloudera  906 Feb 28 17:46 connect-console-sink.properties
+
+----
+6)$ ./bin/kafka-avro-console-consumer --zookeeper localhost:2181 --topic connect-test --from-beginning
+  "log line 1"rr
+  "log line 2"
+
+Stop Standalone process and console consumer;
+kill -9 <Processid>
+
+./bin/connect-standalone ./etc/schema-registry/connect-avro-standalone.properties \
+    ./etc/kafka/connect-file-sink.properties
+
+8) echo -e "log line 3\nlog line 4" >> test.txt
+
+9) Stop the -connect the file sink and kill the process
+
+10)./bin/kafka-avro-console-consumer --zookeeper localhost:2181 --topic connect-test --from-beginning
+====================================================================
+Connect to SQL database (Sqlite and transfer data to other Database)
+====================================================================
+http://docs.confluent.io/3.2.0/connect/quickstart.html#
+http://docs.confluent.io/3.0.0/connect/connect-jdbc/docs/jdbc_connector.html#examples
+
+===============
+install sqlite
+===============
+sudo yum install sqlite
+
+sqlite3 test.db
+
+CREATE TABLE accounts(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name VARCHAR(255));
+INSERT INTO accounts(name) VALUES('alice');
+INSERT INTO accounts(name) VALUES('bob');
+
+cd /home/cloudera/kafka/confluent-3.2.0/etc/kafka-connect-jdbc
+
+change the source topicname in the configration seetings;
+###############source-quickstart-sqlite.properties###############3
+name=accountss-sqlite-jdbc-autoincrement
+connector.class=io.confluent.connect.jdbc.JdbcSourceConnector
+tasks.max=1
+connection.url=jdbc:sqlite:/home/cloudera/kafka/confluent-3.2.0/test.db
+query=select * from accounts
+mode=incrementing
+incrementing.column.name=id
+topic.prefix=test-sqlite-jdbc-accountss
+888888888888888888888888888888888888888888888888888888888888888888888888
+
+./bin/connect-standalone ./etc/schema-registry/connect-avro-standalone.properties ./etc/kafka-connect-jdbc/source-quickstart-sqlite.properties
+
+Sucess message;
+
+[2017-03-30 07:50:33,215] INFO Source task WorkerSourceTask{id=test-sqlite-jdbc-autoincrement-0} finished initialization and start (org.apache.kafka.connect.runtime.WorkerSourceTask:142)
+[2017-03-30 07:50:45,214] WARN Error while fetching metadata with correlation id 1 : {test-sqlite-jdbc-=LEADER_NOT_AVAILABLE} (org.apache.kafka.clients.NetworkClient:707)
+[2017-03-30 07:50:45,400] WARN Error while fetching metadata with correlation id 3 : {test-sqlite-jdbc-=LEADER_NOT_AVAILABLE} (org.apache.kafka.clients.NetworkClient:707)
+[2017-03-30 07:50:45,554] WARN Error while fetching metadata with correlation id 4 : {test-sqlite-jdbc-=LEADER_NOT_AVAILABLE} (org.apache.kafka.clients.NetworkClient:707)
+[2017-03-30 07:51:32,226] INFO Finished WorkerSourceTask{id=test-sqlite-jdbc-autoincrement-0} commitOffsets successfully in 283 ms (org.apache.kafka.connect.runtime.WorkerSourceTask:371)
+[2017-03-30 07:52:44,554] INFO Reflections took 162912 ms to scan 560 urls, producing 12993 keys and 85570 values  (org.reflections.Reflections:229)
+
+./bin/kafka-avro-console-consumer --new-consumer --bootstrap-server localhost:9092 --topic test-sqlite-jdbc-accountss --from-beginning
+
+=========
+mysql jar files;/usr/share/java/mysql-connector-java.jar
+=========
+cd /home/cloudera/kafka/confluent-3.2.0/etc/kafka-connect-jdbc
+
+name=test-sink123
+connector.class=io.confluent.connect.jdbc.JdbcSinkConnector
+tasks.max=1
+topics=orders1
+connection.url=jdbc:sqlite:/home/cloudera/kafka/confluent-3.2.0/test.db
+auto.create=true
+
+==================
+bin/kafka-avro-console-producer \
+ --broker-list localhost:9092 --topic orders1 \
+ --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"id","type":"int"},{"name":"product", "type": "string"}, {"name":"quantity", "type": "int"}, {"name":"price",
+ "type": "float"}]}'
+{"id": 777, "product": "foo", "quantity": 100, "price": 53}
+{"id": 888, "product": "foo", "quantity": 100, "price": 51}
+{"id": 999, "product": "ddd", "quantity": 100, "price": 54}
+{"id": 999, "product": "ddd", "quantity": 100, "price": 54}
+{"id": 999, "product": "ddd", "quantity": 100, "price": 54}
+{"id": 999, "product": "ddd", "quantity": 100, "price": 54}
+{"id": 999, "product": "ddd", "quantity": 100, "price": 54}
+{"id": 999, "product": "ddd", "quantity": 100, "price": 55}
+
+===============
+
+./bin/connect-standalone etc/schema-registry/connect-avro-standalone.properties etc/kafka-connect-jdbc/sink-quickstart-sqlite.properties
+
+=========testing===========
+
+Set retention times
+# Deprecated way
+bin/kafka-topics  --zookeeper localhost:2181 --alter --topic test_topic --config retention.ms=10000
+
+# Modern way
+bin/kafka-configs --zookeeper localhost:2181 --alter --entity-type topics --entity-name test_topic --add-config retention.ms=1000
+
+Delete a topic
+bin/kafka-topics --zookeeper localhost:2181 --delete --topic test_topic
+
+Describe a topic
+bin/kafka-topics --describe --zookeeper localhost:2181 --topic test_topic
+
+Add a partition
+bin/kafka-topics --alter --zookeeper localhost:2181 --topic test_topic --partitions 4
+
+Create a topic
+bin/kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 3 --topic test_topic
+
+List topics
+bin/kafka-topics --list --zookeeper localhost:2181
+
+Push a file of messages to Kafka;
+
+bin/kafka-console-producer --broker-list localhost:9092 --topic test_topic < file.log
+bin/kafka-console-consumer --zookeeper localhost:2181 --topic test_topic --from-beginning
+
+
+
+
+
+
