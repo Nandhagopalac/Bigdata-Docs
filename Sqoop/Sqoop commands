@@ -1,0 +1,378 @@
+Load data into Hbase;
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table orders --columns "order_id,order_date,order_status" --hbase-table orders --column-family retail --hbase-row-key order_id -m 1;
+
+
+Login to mysql databases;
+Sqoop -version
+mysql -u root -p
+Sqoop help
+sqoop help import
+Sqoop help export
+------------------
+a)Copy the data from Mysql to HDFS;
+------------------
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --table orders --username root --password cloudera --target-dir /user/cloudera/na -m 3
+
+=============================================================	
+CTS-interview question's
+======================
+a) Password file
+echo -n cloudera > sqoop.password
+
+hdfs dfs -put /home/cloudera/sqoop.password /user/cloudera/sqoop.password
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --table orders --username root --password-file /user/cloudera/sqoop.password --target-dir /user/cloudera/jjj -m 1
+
+b) file already exists issue in HDFS;
+
+--append is the keyword should be inserted into the sqoop script
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --table nandha --username root --password-file /user/cloudera/sqoop.password --append --target-dir /user/cloudera/nandha -m 1
+
+hdfs dfs -rm -R /user/cloudera/nandha
+
+c) if you want to give your database connection string and credentials then create a file with those details and use --options-file in your sqoop command
+create a file database.props with the following details:
+
+import 
+--connect
+jdbc:mysql://localhost:5432/test_db
+--username
+root
+--password
+password
+then your sqoop import command will look like:
+
+sqoop --options-file database.props \
+    --table test_table \
+    --target-dir /user/test_data
+
+d) no primary key in RDBMS ..how to load the increment data to hive;
+--split-by (somecolumn name) and m 1- for sequence load
+
+There are two ways, as I can see.
+
+--> Alter the RDBMS table to incorporate a timestamp field column.
+
+--> we can go for a staging table(say a Hive table), where we store data from RDBMS with an additional timestamp column. Then move this table to original non-staging one based on timestamp.
+
+===========================================================
+
+copy table data from mysql to Hive;
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table products --hive-import;
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table products --hive-import --hive-overwrite -m 2;
+sqoop import-all-tables --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --hive-import -m 8;--8 mapper will run parelly
+sqoop import-all-tables --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --hive-import --exclude-tables products;
+
+
+Import control arguments:
+   --as-avrodatafile             Imports data to Avro Data Files
+   --as-sequencefile             Imports data to SequenceFiles
+   --as-textfile                 Imports data as plain text (default)
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table orders --as-avrodatafile  --target-dir /user/cloudera/pig/llove;
+
+---------------
+accenture-interview
+-------------
+Loading BLOB details into Hive;
+
+CREATE TABLE images (
+picid int NOT NULL AUTO_INCREMENT,
+description VARCHAR(40),
+image BLOB,
+PRIMARY KEY (picid));
+
+INSERT INTO images VALUES
+(NULL,'picture of a frog','/home/cloudera/Desktop/h1.jpg');
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table images --hive-import --map-column-hive picid=String,image=Binary -m 1;
+----------
+b)Import Subset of Table Data
+----------
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --table orders --where "order_status ='CLOSED'" --username root --password cloudera --target-dir /user/cloudera/naa23 -m1
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --query 'Select * from orders where $CONDITIONS' --split-by order_status --target-dir /user/cloudera/naa;
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --query "SELECT * FROM orders JOIN order_items on(orders.order_id = order_items.order_item_id) WHERE orders.order_status='CLOSED' AND \$CONDITIONS" --hive-import --create-hive-table --hive-table nandha --target-dir /user/cloudera -m 1 ;
+
+==================warehousedir &tagetdir==============
+below parameter points to default hive table location.It can be used for dev purpose, where you just want to perform some tests on internal tables.
+
+--warehouse-dir
+Below parameter points to some hdfs location, where you can mount external hive tables.This is useful in production environment, where you want every data to be available to some external dir and external table.
+
+--target-dir
+
+------------
+Join;
+------------
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --query 'SELECT * FROM orders JOIN order_items on(orders.order_id = order_items.order_item_id) WHERE $CONDITIONS' -m 1 --target-dir /user/cloudera/joinresults;
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --query 'SELECT * FROM orders JOIN order_items on(orders.order_id = order_items.order_item_id) WHERE $CONDITIONS' --create-hive-table --hive-table lalitha --hive-import -m 1 --target-dir '/user/cloudera/ddqqq'
+
+(where clause in join query)
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --query "SELECT * FROM orders JOIN order_items on(orders.order_id = order_items.order_item_id) WHERE orders.order_status='CLOSED' AND \$CONDITIONS" -m 1 --target-dir /user/cloudera/joinresults1;
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --query 'SELECT nandha.id,mercy.name FROM nandha JOIN mercy USING(id) WHERE $CONDITIONS' --m 1 --target-dir /user/cloudera/fffggg;
+
+============
+boundry query
+============
+-- Boundary Query and columns
+sqoop import \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=root\
+  --password=cloudera \
+  --table departments \
+  --target-dir /user/cloudera/departments123 \
+  -m 2 \
+  --boundary-query "select min(department_id),max(department_id) from departments" \
+  --columns department_id,department_name
+
+if i want to select between 2 to 8 records;
+
+sqoop import \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=root\
+  --password=cloudera \
+  --table departments \
+  --target-dir /user/cloudera/departments12345789 \
+  -m 2 \
+  --boundary-query "select 2,8 from departments limit 1" \
+  --columns department_id,department_name
+  --compression-codec snappy
+-------------------
+E) Sqoop Job
+-------------------
+create job;
+sqoop job --create JobName7 -- import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --table products --username root --password cloudera -m1 --target-dir /user/cloudera/ddddrrrr;
+sqoop job --create JobName8 -- list-tables --connect jdbc:mysql://quickstart.cloudera:3306/retail_db;
+
+verify job;
+sqoop job --list
+sqoop job --show JobName6
+sqoop job --exec JobName7
+sqoop job --delete JobName6
+
+-------------------
+E) Sqoop Codegen
+-------------------
+Sqoop-codegen command generates Java class files which encapsulate and interpret imported records. The Java definition of a record is initiated as part of the import process. For example, if Java source is lost, it can be recreated. New versions of a class can be created which use different delimiters between fields, and so on.
+
+sqoop codegen --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table customers --class-name SQOOP_IMPORT --outdir /tmp/;
+
+-------------------
+F) select query evaluvation
+-------------------
+sqoop eval --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --query "SELECT * FROM orders LIMIT 10";
+sqoop eval --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera -query "INSERT INTO orders VALUES(600000,'2013-07-25',11599,'OPEN')";
+sqoop eval --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --query "select * from orders where order_id='600000'";
+--------------------
+G)list databases;
+--------------------
+sqoop list-databases --connect jdbc:mysql://quickstart.cloudera:3306 --username root --password cloudera;
+sqoop list-tables --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera;
+
+++++++++++++++++++++++++++++++++++++llllllllllllllllllll+++++++++++++
+a) Blog 1: Import from mysql into Hive;
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table orders --where "order_status='CLOSED'" --direct -m 1 --hive-import --create-hive-table --hive-table nandha11 --target-dir /user/hive/warehouse/bb;
+
+(it will overwrite the existing data) (same tble overwrite is poosible but new table creation overwrite is not possible)
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table orders --where "order_status='COMPLETE'" --direct -m 1 --hive-overwrite --hive-import --target-dir /user/hive/warehouse/bb123;
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table orders --where "order_status='CLOSED'" --direct -m 1 --hive-overwrite --hive-import --target-dir /user/hive/warehouse/bb123;
+
+========================================
+Loading data into Hive table with partion creation;(Split by column should be index else it will create performance issue)
+========================================
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table customers --split-by customer_state --create-hive-table --hive-table esss --target-dir /user/hive/warehouse/bb --hive-partition-key customer_state1 --hive-partition-value 'CA' --hive-import --target-dir /user/hive/warehouse/bb -m 3;
+
+========================================
+Export data from Hdfs to Mysql;
+========================================
+
+Step1; (Create table in mysql)
+
+CREATE TABLE employees_export (
+  emp_no int(11) NOT NULL,
+  birth_date date NOT NULL,
+  first_name varchar(14) NOT NULL,
+  last_name varchar(16) NOT NULL,
+  gender enum('M','F') NOT NULL,
+  hire_date date NOT NULL,
+  PRIMARY KEY (emp_no)
+);
+
+Step2; (create table in mysql)
+
+CREATE TABLE employees_exp_stg (
+  emp_no int(11) NOT NULL,
+  birth_date date NOT NULL,
+  first_name varchar(14) NOT NULL,
+  last_name varchar(16) NOT NULL,
+  gender enum('M','F') NOT NULL,
+  hire_date date NOT NULL,
+  PRIMARY KEY (emp_no)
+);
+
+Step3;
+
+Crete a file in local directory and move into Hdfs;
+
+Step4;
+
+sqoop export \
+--connect jdbc:mysql://quickstart.cloudera:3306/retail_db \
+--username root \
+--password cloudera \
+--table employees_export  \
+-m 4 \
+--export-dir /user/cloudera/f (Hdfs path)
+
+Step 4;
+
+Exporting data from Hive to Mysql; (it is not working need to check)
+
+sqoop export \
+--connect jdbc:mysql://quickstart.cloudera:3306/retail_db \
+--username root \
+--password cloudera \
+--table lali \
+-m 4 \
+--export-dir /user/hive/warehouse/nandha111
+
+===============================
+C)Incremental Import into HDFS - (data will load into same directory with different file name)
+===============================
+(First; insert some records in the Mysql database );
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --table nandha --username root --password cloudera --target-dir /user/cloudera/na -m 1;
+sqoop job --create 123 -- import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --table nandha --username root --password cloudera --incremental append --check-column id --last-value 3 --target-dir /user/cloudera/na -m 1;
+
+sqoop job --create 123 -- import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --table nandha --username root --password cloudera --split-by <Columnname>--incremental lastmodified --check-column Modifieddate --last-value "2014-12-01 00:00:00:0" --target-dir /user/cloudera/na -m 1;
+
+sqoop job --exec 123;
+
+Step 2 â€“ Incremental import of data from MySQL to Hive (after initial load is done)
+
+sqoop import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table lali --hive-import -m 1;
+sqoop job --create test1 -- import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table lali --hive-import --direct --incremental append --check-column id --last-value 101 -m 1;
+sqoop job --create test7 -- import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table lali --hive-import --direct --incremental append --check-column id --last-value 0 --hive-overwrite -m 1;
+
+====^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^=================overwrite table^^^^^^^^^^^^^^^^^=================
+
+sqoop job --create test2 -- import --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username root --password cloudera --table lali --hive-import --hive-overwrite --direct --incremental append --check-column id --last-value 4 -m 1;
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@ interview questions@@@@@@@@@@@@@@@@@@@22
+
+What is the default file format to import data using Apache Sqoop?
+
+Sqoop allows data to be imported using two file formats
+i) Delimited Text File Format
+
+This is the default file format to import data using Sqoop. This file format can be explicitly specified using the â€“as-textfile argument to the import command in Sqoop. Passing this as an argument to the command will produce the string based representation of all the records to the output files with the delimited characters between rows and columns.
+ii) Sequence File Format
+
+It is a binary file format where records are stored in custom record-specific data types which are shown as Java classes. Sqoop automatically creates these data types and manifests them as java classes.
+3) I have around 300 tables in a database. I want to import all the tables from the database except the tables named Table298, Table 123, and Table299. How can I do this without having to import the tables one by one?
+
+This can be accomplished using the import-all-tables import command in Sqoop and by specifying the exclude-tables option with it as follows-
+
+sqoop import-all-tables
+
+--connect â€“username â€“password --exclude-tables Table298, Table 123, Table 299
+4) Does Apache Sqoop have a default database?
+
+Yes, MySQL is the default database.
+5) How can I import large objects (BLOB and CLOB objects) in Apache Sqoop?
+
+Apache Sqoop import command does not support direct import of BLOB and CLOB large objects. To import large objects, I Sqoop, JDBC based imports have to be used without the direct argument to the import utility.
+6) How can you execute a free form SQL query in Sqoop to import the rows in a sequential manner?
+
+This can be accomplished using the â€“m 1 option in the Sqoop import command. It will create only one MapReduce task which will then import rows serially.
+7) How will you list all the columns of a table using Apache Sqoop?
+
+Unlike sqoop-list-tables and sqoop-list-databases, there is no direct command like sqoop-list-columns to list all the columns. The indirect way of achieving this is to retrieve the columns of the desired tables and redirect them to a file which can be viewed manually containing the column names of a particular table.
+
+Sqoop import --m 1 --connect 'jdbc: sqlserver: //nameofmyserver; database=nameofmydatabase; username=DeZyre; password=mypassword' --query "SELECT column_name, DATA_TYPE FROM INFORMATION_SCHEMA.Columns WHERE table_name='mytableofinterest' AND \$CONDITIONS" --target-dir 'mytableofinterest_column_name'
+8) What is the difference between Sqoop and DistCP command in Hadoop?
+
+Both distCP (Distributed Copy in Hadoop) and Sqoop transfer data in parallel but the only difference is that distCP command can transfer any kind of data from one Hadoop cluster to another whereas Sqoop transfers data between RDBMS and other components in the Hadoop ecosystem like HBase, Hive, HDFS, etc.
+9) What is Sqoop metastore?
+
+Sqoop metastore is a shared metadata repository for remote users to define and execute saved jobs created using sqoop job defined in the metastore. The sqoop â€“site.xml should be configured to connect to the metastore.
+
+10) What is the significance of using â€“split-by clause for running parallel import tasks in Apache Sqoop?
+
+--Split-by clause is used to specify the columns of the table that are used to generate splits for data imports. This clause specifies the columns that will be used for splitting when importing the data into the Hadoop cluster. â€”split-by clause helps achieve improved performance through greater parallelism. Apache Sqoop will create splits based on the values present in the columns specified in the â€“split-by clause of the import command. If the â€“split-by clause is not specified, then the primary key of the table is used to create the splits while data import. At times the primary key of the table might not have evenly distributed values between the minimum and maximum range. Under such circumstances â€“split-by clause can be used to specify some other column that has even distribution of data to create splits so that data import is efficient.
+11) You use â€“split-by clause but it still does not give optimal performance then how will you improve the performance further.
+
+Using the â€“boundary-query clause. Generally, sqoop uses the SQL query select min (), max () from to find out the boundary values for creating splits. However, if this query is not optimal then using the â€“boundary-query argument any random query can be written to generate two numeric columns.
+12) During sqoop import, you use the clause â€“m or â€“numb-mappers to specify the number of mappers as 8 so that it can run eight parallel MapReduce tasks, however, sqoop runs only four parallel MapReduce tasks. Why?
+
+Hadoop MapReduce cluster is configured to run a maximum of 4 parallel MapReduce tasks and the sqoop import can be configured with number of parallel tasks less than or equal to 4 but not more than 4.
+13) You successfully imported a table using Apache Sqoop to HBase but when you query the table it is found that the number of rows is less than expected. What could be the likely reason?
+
+If the imported records have rows that contain null values for all the columns, then probably those records might have been dropped off during import because HBase does not allow null values in all the columns of a record.
+14) The incoming value from HDFS for a particular column is NULL. How will you load that row into RDBMS in which the columns are defined as NOT NULL?
+
+Using the â€“input-null-string parameter, a default value can be specified so that the row gets inserted with the default value for the column that it has a NULL value in HDFS.
+
+While  importing data : 
+--null-string
+--null-non-string
+
+while exporting data : 
+--input-null-string
+--input-null-non-string
+
+sqoop import --driver com.teradata.jdbc.TeraDriver \
+--connect "jdbc:teradata://SERVER_IP_ADDRESS/DATABASE=ttmp" \
+--username USERNAME \
+--password PASSWORD \
+--table TABLE_NAME \
+--delete-target-dir \
+--split-by transaction_id \
+--null-string NULL_CHAR_1
+--null-non-string NULL_CHAR_2
+-m 8
+In above example :
+1. --null-string argument represents what should be writtern in HDFS whenever a NULL is identified in column defined as string in relational database.
+2. --null-non-string argument works similar to --null-string argument except that it work on columns defined as non-string in relational database.
+
+--delete-target-dir : by default sqoop import data in HDFS under directory named with tablename. If this directory already exists then sqoop will fail. To import fresh data everytime this option has to be selected.
+
+15) If the source data gets updated every now and then, how will you synchronise the data in HDFS that is imported by Sqoop?
+
+Data can be synchronised using incremental parameter with data import â€“
+
+--Incremental parameter can be used with one of the two options-
+
+i) append-If the table is getting updated continuously with new rows and increasing row id values then incremental import with append option should be used where values of some of the columns are checked (columns to be checked are specified using â€“check-column) and if it discovers any modified value for those columns then only a new row will be inserted.
+
+ii) lastmodified â€“ In this kind of incremental import, the source has a date column which is checked for. Any records that have been updated after the last import based on the lastmodifed column in the source, the values would be updated.
+
+16) Below command is used to specify the connect string that contains hostname to connect MySQL with local host and database name as test_db â€“
+â€“connect jdbc: mysql: //localhost/test_db
+Is the above command the best way to specify the connect string in case I want to use Apache Sqoop with a distributed hadoop cluster?
+
+When using Sqoop with a distributed Hadoop cluster the URL should not be specified with localhost in the connect string because the connect string will be applied on all the DataNodes with the Hadoop cluster. So, if the literal name localhost is mentioned instead of the IP address or the complete hostname then each node will connect to a different database on their localhosts. It is always suggested to specify the hostname that can be seen by all remote nodes.
+Sqoop Interview Questions for Experienced
+
+1) I have 20000 records in a table. I want copy them to two separate files( records equally distributed) into HDFS (using Sqoop). 
+How do we achieve this, if table does not have primary key or unique key?
+You have a table with column col1 with values from 1 -100 (some of the repeated values are also there).
+Now, sqoop will determine minimum and maximum value and split it into 2 parts
+1 - 50
+51 - 100
+Mappers will fetch data via JDBC using queries like -
+
+SELECT * FROM sometable WHERE id >= 1 AND id < 50
+SELECT * FROM sometable WHERE id >= 51 AND id < 100
+So, go ahead with your sqoop import query with two mappers (-m 2).
