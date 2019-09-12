@@ -1,0 +1,1266 @@
+Apache Hive;
+
+Apache Hive Tutorial: Introduction
+
+Apache Hive which is a data warehousing tool in the Hadoop Ecosystem.
+ It provides SQL like language to perform queries and analytics on Big Data.Today, many companies consider Apache Hive as a genuine option or standard to perform analytics on large data sets.
+Hive is not only a saviour for people from non-programming background, it also reduces the work of programmers who spend long hours writing MapReduce programs
+
+Difference betwenn hive and Mysql;
+When to Use Hive
+
+    If you have large (think terabytes/petabytes) datasets to query: Hive is
+    designed specifically for analytics on large datasets and works well
+    for a range of complex queries. Hive is the most approachable way to quickly (relatively)
+    query and inspect datasets already stored in Hadoop.
+    If extensibility is important: Hive has a range of user function APIs that can be used to build
+    custom behavior in to the query engine. Check out my guide to Hive functions
+    if youâ€™d like to learn more.
+
+When to Use MySQL
+
+    If performance is key: If you need to pull data frequently and
+    quickly, such as to support an application that uses online
+    analytical processing (OLAP), MySQL performs much better. Hive isnâ€™t
+    designed to be an online transactional platform, and thus performs
+    much more slowly than MySQL.
+    If your datasets are relatively small (gigabytes): Hive works very well in
+    large datasets, but MySQL performs much better with
+    smaller datasets and can be optimized in a range of ways.
+    If you need to update and modify a large number of records
+    frequently: MySQL does this kind of activity all day long. Hive,
+    on the other hand, doesnâ€™t really do this well (or at
+    all, depending). And if you need an interactive experience, use
+    MySQL.
+
+=============
+Data types;
+integer data types;
+Tiny int
+small int
+int
+bigint
+
+String data types
+varchar
+char
+
+date datatype
+DATE
+TIMESTAMP
+
+mis types
+Boolean
+binary
+
+Complextypes;
+arrays;
+maps
+structs
+union
+	
+arrays: It is an ordered collection of elements.The elements in the array must be of the same type.
+map: It is an unordered collection of key-value pairs.Keys must be of primitive types.Values can be of any type.
+struct: It is a collection of elements of different types.
+
+Examples: complex datatypes
+
+ARRAY:
+
+$ cat >arrayfile
+1,abc,40000,a$b$c,hyd
+2,def,3000,d$f,bang
+
+hive> create table tab7(id int,name string,sal bigint,sub array<string>,city string)
+    > row format delimited  
+    > fields terminated by ','
+    > collection items terminated by '$';
+
+hive>select sub[2] from tab7 where id=1;
+
+hive>select sub[0] from tab7;
+
+MAP:
+
+$ cat> mapfile
+1,abc,40000,a$b$c,pf#500$epf#200,hyd
+2,def,3000,d$f,pf#500,bang
+
+hive>create table tab10(id int,name string,sal bigint,sub array<string>,dud map<string,int>,city string)
+row format delimited
+fields terminated by ','
+collection items terminated by '$'
+map keys terminated by '#';
+
+hive> load data local inpath '/home/training/mapfile' overwrite into table tab10;
+
+hive>select dud["pf"] from tab10;
+
+hive>select dud["pf"],dud["epf"] from tab10;
+
+STRUCT:
+
+cat >mapfile
+1,abc,40000,a$b$c,pf#500$epf#200,hyd$ap$500001
+2,def,3000,d$f,pf#500,bang$kar$600038
+
+hive> create table tab11(id int,name string,sal bigint,sub array<string>,dud map<string,int>,addr struct<city:string,state:string,pin:bigint>)
+    > row format delimited
+    > fields terminated by ','
+    > collection items terminated by '$'
+    > map keys terminated by '#';
+
+hive> load data local inpath '/home/training/structfile' into table tab11;
+
+hive>select addr.city from tab11;
+===============================
+Complex data type-Workout
+===============================
+
+1,nandha,200,12$13$14,epdf#100,ayyampudur$erode$500076
+2,mailu,200,15$15$17,epdf#100,ayyampudur$vilupuram$50007
+
+drop table complexdatatype
+
+create external table complexdatatype
+(empid int,ename string,sal bigint, str array <int>,mapp map <string,int>,anyy struct <address:string,dist:string,pincode:int>)
+row format delimited
+fields terminated by ','
+collection items terminated by '$'
+map keys terminated by '#'
+lines terminated by '\n'
+location '/user/cloudera/nandha';
+
+load data local inpath '/home/cloudera/Desktop/dd' overwrite into table complexdatatype;
+select * from complexdatatype
+
+select * from complexdatatype;
+select a.*,str[0],str[1],str[2],mapp['epdf'],anyy.address,anyy.dist,anyy.pincode from complexdatatype a;
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+SerDe;
+
+Apache Hive uses SerDe (and FileFormat) to read and write data from tables.A SerDe is a short name for a Serializer Deserializer.
+An important concept behind Hive is that it DOES NOT own the Hadoop File System (HDFS) format that data is stored in.
+As of Hive 0.14 a registration mechanism has been introduced for native Hive SerDes.  This allows dynamic binding between a "STORED AS" keyword in place of a triplet of {SerDe, InputFormat, and OutputFormat} specification, in CreateTable statements.
+
+What is a SerDe?
+
+    SerDe is a short name for "Serializer and Deserializer."
+    Hive uses SerDe (and FileFormat) to read and write table rows.
+    HDFS files --> InputFileFormat --> <key, value> --> Deserializer --> Row object
+    Row object --> Serializer --> <key, value> --> OutputFileFormat --> HDFS files
+So while selecting the data from Apache Hive SerDe.deserialize() method is called and while inserting the data SerDe.serialize() method is called
+
+Note that the "key" part is ignored when reading, and is always a constant when writing. Basically row object is stored into the "value".
+
+One principle of Hive is that Hive does not own the HDFS file format. Users should be able to directly read the HDFS files in the Hive tables using other tools or use other tools to directly write to HDFS files that can be loaded into Hive through "CREATE EXTERNAL TABLE" or can be loaded into Hive through "LOAD DATA INPATH," which just move the file into Hive's table directory.
+
+Note that org.apache.hadoop.hive.serde is the deprecated old SerDe library. Please look at org.apache.hadoop.hive.serde2 for the latest version.
+
+Hive currently uses these FileFormat classes to read and write HDFS files:
+
+TextInputFormat/HiveIgnoreKeyTextOutputFormat: These 2 classes read/write data in plain text file format.
+SequenceFileInputFormat/SequenceFileOutputFormat: These 2 classes read/write data in Hadoop SequenceFile format.
+
+Hive simple table creation;
+
+    Text File.
+    SequenceFile.
+    RCFile.
+    Avro Files.
+    ORC Files.
+    Parquet.
+    Custom INPUTFORMAT and OUTPUTFORMAT.
+
+Step1;
+http://aqsdr1.epa.gov/aqsweb/aqstmp/airdata/download_files.html#Raw (take the GB data from this URL)
+
+Step2;
+unzip hourly_TEMP_2014.zip
+
+Step3;(remove the Header using below comments)
+tail -n +2 hourly_TEMP_2014.csv > hourly_TEMP_2014.csv.tmp && mv -f hourly_TEMP_2014.csv.tmp hourly_TEMP_2014.csv
+gzip hourly_TEMP_2014.csv
+
+Step4;
+Load the data into HDFS
+hadoop fs -copyFromLocal hourly_TEMP_2014.csv.gz /tmp
+
+Step5;
+create table temps_txt (statecode string, countrycode string, sitenum string, paramcode string, poc string, latitude string, longitude string, datum string, param string, datelocal string, timelocal string, dategmt string, timegmt string, degrees double, uom string, mdl string, uncert string, qual string, method string, methodname string, state string, county string, dateoflastchange string) row format delimited fields terminated by ',';
+
+load data inpath '/tmp/hourly_TEMP_2014.csv.gz' into table temps_txt;
+Create Orc table
+
+create table temps_orc (statecode string, countrycode string, sitenum string, paramcode string, poc string, latitude string, longitude string, datum string, param string, datelocal string, timelocal string, dategmt string, timegmt string, degrees double, uom string, mdl string, uncert string, qual string, method string, methodname string, state string, county string, dateoflastchange string) stored as orc;
+insert into table temps_orc select * from temps_txt;
+
+Create Avro table;
+create table temps_avr
+stored as avro
+tblproperties ('avro.schema.literal'='{
+"name": "temps",
+"type": "record",
+"fields": [
+{"name":"statecode", "type":"string"},
+{"name":"countrycode", "type":"string"},
+{"name":"sitenum", "type":"string"},
+{"name":"paramcode", "type":"string"},
+{"name":"poc", "type":"string"},
+{"name":"latitude", "type":"string"},
+{"name":"longitude", "type":"string"},
+{"name":"datum", "type":"string"},
+{"name":"param", "type":"string"},
+{"name":"datelocal", "type":"string"},
+{"name":"timelocal", "type":"string"},
+{"name":"dategmt", "type":"string"},
+{"name":"timegmt", "type":"string"},
+{"name":"degrees", "type":"double"},
+{"name":"uom", "type":"string"},
+{"name":"mdl", "type":"string"},
+{"name":"uncert", "type":"string"},
+{"name":"qual", "type":"string"},
+{"name":"method", "type":"string"},
+{"name":"methodname", "type":"string"},
+{"name":"state", "type":"string"},
+{"name":"county", "type":"string"},
+{"name":"dateoflastchange", "type":"string"}
+]}');
+(To check the Avro table properities)
+$ java -jar avro-tools-1.7.4.jar tojson user3.avro
+{"name":"tofi","bday":"2006-06-06","country":"Sweden"}
+
+insert into table temps_avr select * from temps_txt;
+
+Create Parquet table;
+create table parq_large stored as parquet as select * from temps_txt;
+select count(*) from temps_txt
+select count(*) from temps_orc
+select count(*) from temps_avr
+select count(*) from parq_large
+
+https://pkghosh.wordpress.com/2012/05/06/hive-plays-well-with-json/ (Example program for json file format)
+
+Compression Codec;
+
+Performance
+One would think that compression typically would slow down map reduce processing.  In our test, loading the test took more time but the query on the compressed data took 53.95 seconds versus 32.142 seconds.  The reduced size of data can make for much less disk IO so for jobs that are heavy on disk IO so there may be little impact to processing time.  Jobs that are CPU intensive with limited CPU resources would be more likely to impact processing.    The developers and administrators will have to monitored performance implications of using various compression options.   There are several codecs that can be used each with their own drawbacks and advantages:
+
+DEFLATE org.apache.hadoop.io.compress.DefaultCodec
+gzip 	org.apache.hadoop.io.compress.GzipCodec
+bzip2 	org.apache.hadoop.io.compress.BZip2Codec
+LZO 	com.hadoop.compression.lzo.LzopCodec
+LZ4 	org.apache.hadoop.io.compress.Lz4Codec
+Snappy 	org.apache.hadoop.io.compress.SnappyCodec
+4mc     com.hadoop.compression.fourmc.FourMcCodec
+
+Once the compression is enabled, then Hive will use whichever compression codec is configured.   Hadoop has a default codec, but the compression codec can be specified in either the mapred-site.xml, hive-site.xml, or for the hive session.  The snappy codec is often used because it attempts to use minimal CPU time.
+
+<property>
+<name>mapred.map.output.compression.codec</name>
+<value>org.apache.hadoop.io.compress.SnappyCodec</value>
+</property>
+
+<property>
+<name>mapred.output.compression.codec</name>
+<value>org.apache.hadoop.io.compress.BZip2Codec</value>
+</property>
+
+<property>
+<name>hive.exec.compress.output</name>
+<value>true</value>
+</property>
+
+1] Snappy is a compression and decompression library, initially developed from Google and now integrated into Hadoop. Snappy acts about 10% faster than LZO
+========
+Workshop
+========
+drop table hivetest2;
+drop table hivetest1;
+seq 1 1000 | awk '{OFS="\001";print $1, $1 % 10}' > test_input.hive
+hdfs dfs -put /home/cloudera/test_input.hive /tmp/hivetest
+create external table hivetest1 (a int) 
+row  format delimited
+lines terminated by '\n';
+load data inpath '/tmp/hivetest' into table hivetest1;
+Select * from hivetest1;
+SET hive.exec.compress.output=true;
+SET mapred.output.compression.codec=org.apache.hadoop.io.compress.SnappyCodec;
+SET mapreduce.output.fileoutputformat.compress=true;
+INSERT OVERWRITE DIRECTORY '/user/hive/warehouse/ss' SELECT * FROM hivetest1;
+
+create external table hivetest2 (a int)
+row  format delimited
+lines terminated by '\n'
+STORED AS ORC
+location '/user/cloudera/ss/qqq';
+
+load data inpath '/user/hive/warehouse/ss/*.snappy' into table hivetest2;
+select * from hivetest2
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Hive performance;
+
+1.enable compresion in hive
+2.Optimize the joins
+auto map joins
+skew joins
+enabled buckted map joins
+(update the Detail in the hive-site.xml)
+4.ordreby,sort by,distribute by
+5Tez execution engine
+6.Enable parellel execution(mapreduce stage,sampling stage,merge stage and limit stage)
+7.use ORC file format
+8.compresion techniques(SNAPPY,ZLIP and so on)
+===========Word count program=============
+DROP TABLE IF EXISTS docs;
+CREATE TABLE docs (line STRING);
+
+LOAD DATA INPATH '/user/hive/warehouse/temps_txt_less/yyy' OVERWRITE INTO TABLE temps_avr_less;
+
+CREATE TABLE word_counts AS
+SELECT word, count(1) AS count FROM
+(SELECT explode(split(line, '\s')) AS word FROM docs) temp
+GROUP BY word
+ORDER BY word;
+
+===================
+index -bitmap index
+===================
+
+People coming from RDBMS background might know the benefit of Indexing.Indexes are useful for faster access to rows in a table. If we want to apply indexing using Hive then the first expectation might be that with indexing it should take less time to fetch records and it should not launch a map reduce job. Whereas in practice a map reduce job would still be launched on a Hive query even though an index is created on ahive table.Map/reduce job runs on the table that holds the index data to get all the relevant offsets into the main table and then using those offsets it figures out which blocks to read from the main table. So you will not see map/reduce go away even when you are running queries on tables with indexes on them. The biggest advantage of having index is that it does not require a full table scan and it would query only the HDFS blocks required.
+The difference b/w compact and bitmap indexes(Hive 0.8) is how they store the mapping from values to the rows in which the value occurs (Compact Index seems to store (value, block-id) pairs while Bitmap Index stores (value , list of rows as a bitmap))
+Differnce between Compact intex and bit map index;
+
+select count(countrycode) from temps_txt_less;
+select count(countrycode) from temps_orc_less;
+select count(countrycode) from parq_large_less;
+
+create index dd on table temps_txt_less(countrycode) AS  'bitmap' with deferred rebuild;
+create index dd on table temps_orc_less(countrycode) AS  'bitmap' with deferred rebuild;
+create index dd on table parq_large_less(countrycode) AS  'bitmap' with deferred rebuild;
+
+create index dd on table temps_txt_less(countrycode) AS  'COMPACT' with deferred rebuild;
+create index dd on table temps_orc_less(countrycode) AS  'COMPACT' with deferred rebuild;
+create index dd on table parq_large_less(countrycode) AS  'COMPACT' with deferred rebuild;
+---checking the index-----
+show index on parq_large_less;
+show index on temps_orc_less;
+show index on temps_txt_less;
+
+select count(countrycode) from temps_txt_less;
+select count(countrycode) from temps_orc_less;
+select count(countrycode) from parq_large_less;
+
+=======================
+Hive internal and External table;
+=======================
+
+Hive Internal Table:
+
+Internal table/Manage tableâ€”If our data available into local file system then we should go for Hive internal table. Where Hive organizes them inside a warehouse directory, which is controlled by the hive.metastore.warehouse.dir property whose  default value is /user/hive/warehouse (in HDFS);
+
+Note: In internal table the data and table is tightly coupled,  if we are trying to drop the table means both table, data and metadata droped.
+
+**** Internal table with load is recommended.****
+
+Example:
+
+1. Create  table Managed_lali (empno int,DOB string,firstname string,lastname string,DOJ string)
+   row format delimited
+   fields terminated by ','
+   lines terminated by '\n'
+   LOCATION '/user/cloudera/external_table'
+
+2. If we are not specifying the location at the time of table creation, we can load the data manually
+   load data inpath '/user/cloudera/Emp' into table lali;
+
+
+3. Display the content of the table
+   Select * from lali;
+
+4. To drop the internal table
+   Hive>DROP TABLE external_table;
+
+If you dropped the internal/managed table, including its metadata and its data, is deleted.
+
+Hive External Table:
+
+external tableâ€”If our data available into HDFS the we should go for Hive External table. in this case Hive doesnâ€™t manage them.
+
+Note: In External table the data and table is loosely  coupled, if we are trying to drop the External table, the table is droped data is available into HDFS.
+
+**** External table with location is recommended.****
+
+Internal tables are useful if you want Hive to manage the complete lifecycle of your data including the deletion, whereas external tables are useful when the files are being used outside of Hive.
+
+Example:
+ 
+1. Create External table
+   create external table lali (empno int,DOB string,firstname string,lastname string,DOJ string)
+   row format delimited
+   fields terminated by ','
+   lines terminated by '\n'
+   LOCATION '/user/cloudera/external_table'
+
+2. If we are not specifying the location at the time of table creation, we can load the data manually
+   load data inpath '/user/cloudera/Emp' into table lali;
+
+
+3. Display the content of the table
+   Select * from lali;
+
+4. To drop the internal table
+   Hive>DROP TABLE external_table;
+
+When you drop an external table, Hive will leave the data untouched and only delete the metadata
+
+===================
+ALTER COMMAND
+===================
+ALTER TABLE name RENAME TO new_name
+ALTER TABLE name ADD COLUMNS (col_spec[, col_spec ...])
+ALTER TABLE name CHANGE column_name new_name new_type
+ALTER TABLE name REPLACE COLUMNS (col_spec[, col_spec ...]) - it will replace everything and will implement new one)
+
+===================
+PArticition table;(Add partition)
+===================
+create table lali (empno int,DOB string,firstname string,lastname string)
+partitioned  by (DOJ string)
+row format delimited
+fields terminated by ','
+lines terminated by '\n'
+STORED AS textfile
+location '/user/cloudera/external_table'
+
+load data inpath '/user/cloudera/emp1' into table lali partition (DOJ='2018');
+
+alter table lali add partition (DOJ ='2019')
+location '/user/cloudera/external_table'
+
+Renaming a Partition
+ALTER TABLE employee PARTITION (year=â€™1203â€™)
+RENAME TO PARTITION (Yoj=â€™1203â€™);
+
+Dropping a Partition;
+ALTER TABLE employee DROP [IF EXISTS]
+PARTITION (year=â€™1203â€™);
+
+Dynamicpartion.hql (important-while scheduling ozzie workflow , we must specify the hdfs file system not the local file sysem)
+=====================================
+drop table if exists Unm_Dup_Parti;
+drop table if exists Unm_Parti;
+set hive.enforce.bucketing=true;
+create external table Unm_Dup_Parti (EmployeeID Int,FirstName String,Designation  String,Salary Int,Department String) row format delimited fields terminated by "," lines terminated by '\n' location '/user/unmesha/HiveTrail';
+create  table Unm_Parti (EmployeeID Int,FirstName String,Designation  String,Salary Int) PARTITIONED BY (Department String) clustered by (Designation) into 8 buckets row format delimited fields terminated by ",";
+load data local inpath '/home/cloudera/Desktop/dynamic' into table unm_dup_parti;
+select * from unm_dup_parti;
+insert into table unm_parti partition (Department = 'A' ) select employeeid,firstname,designation,salary from unm_dup_parti where 
+.department='A';
+insert into table unm_parti partition (Department = 'B' ) select employeeid,firstname,designation,salary from unm_dup_parti where department='B';
+insert into table unm_parti partition (Department = 'C' ) select employeeid,firstname,designation,salary from unm_dup_parti where department='C';
+truncate table Unm_Parti;
+set hive.exec.dynamic.partition=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.exec.max.dynamic.partitions.pernode=3;
+FROM Unm_Dup_Parti 
+INSERT OVERWRITE TABLE Unm_Parti PARTITION(department) 
+SELECT EmployeeID, FirstName,Designation,Salary,department DISTRIBUTE BY department;
+
+
+=======
+Parameter Passing and Executing Ozzie workflow
+=======
+
+select * from unm_parti where unm_parti.department = '${department}';
+
+==================================
+Partition bucket
+==================================
+drop table if exists order;
+drop table if exists order1;
+CREATE TABLE order(
+    username     STRING,
+    orderdate    STRING,
+    amount        DOUBLE,
+    tax        DOUBLE ) PARTITIONED BY (company STRING)
+CLUSTERED BY (username) INTO 5 BUCKETS
+row format delimited
+fields terminated by ','
+lines terminated by '\n';
+
+CREATE TABLE order1(
+    username     STRING,
+    orderdate    STRING,
+    amount        DOUBLE,
+    tax        DOUBLE ) 
+    row format delimited
+fields terminated by ','
+lines terminated by '\n';
+
+Load data local inpath '/home/cloudera/Desktop/ss' into table order1;
+
+set hive.enforce.bucketing=true;
+set map.reduce.tasks = 5;
+select * from order1;
+insert overwrite table order partition (company='pppp3333wwww1')select username,orderdate,amount,tax from order1;
+select * from order;
+===========
+SAMPLING;
+===========
+SELECT * FROM partion_bucket TABLESAMPLE(BUCKET 2 OUT OF 4);
+select * from mer2 tablesample (50 percent);
+===========
+Tocheck the median
+===========
+select percentile(cast(employeeid as BIGINT),0.7) from unm_dup_parti;
+===========
+Joins
+===========
+Mapside-Join (refer the below link for more clarity)
+set hive.input.format=org.apache.hadoop.hive.ql.io.BucketizedHiveInputFormat;
+set hive.optimize.bucketmapjoin = true;
+set hive.optimize.bucketmapjoin.sortedmerge = true;
+set hive.cli.print.header=true;
+
+=========================================================================
+bucked Map Join:
+Small table(dimension table) joins big table(fact table). It is very fast since it saves shuffle and reduce stage.
+ Use case:
+When all tables are:
+
+    Large.
+    Bucketed using the join columns.
+    The number of buckets in one table is a multiple of the number of buckets in the other table.
+    Not sorted. 
+
+select * from departments_txt a join employees_tsv b on (a.deptno=b.DeptNo);
+When:
+    One table should be small, which fits in memory
+    To save the shuffle & reduce stages
+    To do the join work only in the map stage
+    Itâ€™s suitable for small tables to optimize the task
+How:
+    Reads small table into memory hash table
+    Streams through part of the big file
+    Joining each record from hash table
+    It is similar to a join but all the task will be performed by the mapper alone
+
+SELECT /*+ MAPJOIN(a) */  * from   departments_txt a join employees_tsv b  on (a.deptno=b.DeptNo);
+
+$$$$$$$$$$$$$$$$$
+
+Streamtable refers to bigest table
+hive&gt; SELECT
+            /*+ STREAMTABLE(t1) */
+            t1.id,
+            t1.name,
+            t1.age,
+            t2.name,
+            t2.age
+          FROM
+            t1
+            JOIN t2 ON (t1.id = t2.id)
+
+http://www.openkb.info/2014/11/understanding-hive-joins-in-explain.html
+
+Sort Merge Bucket(SMB) Map Join;
+
+you must define the tables to be CLUSTERED BY same column and SORTED BY same column in the same order INTO same amount of buckets.
+hive.enforce.sorting=true;
+
+How:
+Join is done in Mapper only. The corresponding buckets are joined with each other at the mapper.
+Use case:
+When all tables are:
+
+    Large.
+    Bucketed using the join columns.
+    Sorted using the join columns.
+    All tables have the same number of buckets.
+
+Sort by
+
+hive> SELECT  E.EMP_ID FROM Employee E SORT BY E.empid;  
+May use multiple reducers for final output.
+Only guarantees ordering of rows within a reducer.
+May give partially ordered result.
+
+Order by
+
+hive> SELECT  E.EMP_ID FROM Employee E order BY E.empid;  
+Uses single reducer to guarantee total order in output.
+LIMIT can be used to minimize sort time
+
+Skew Join:
+hive.optimize.skewjoin=true
+hive.auto.convert.join=true
+
+Skew Join Optimization in Hive
+Skew is a very common issue which most of the data engineers come across. 
+
+Overview of Skew - When in our data we have very large number of records associated with one(or more) key, then this kind of data leads to skew issue and the data is said to be skewed on that key.
+
+Problem statement -
+Assume we have a table which tracks the online visits to different websites. In this table amazon.com has 1 Billion rows whereas there are other not very popular sites (www.abc.com, www.xyz.com..etc) which in totality has 100K rows. Lets assume we have a column site_id which is unique for a website.
+Now if we join this table with some other table on site_id, then one reducer will have to process 1B records and other reducers will process the 100K rows. In this situation, it is common to see the reducers processing 100K records finishing quickly(say avg 1 minute) as compared to the reducer for amazon.com taking a really long time(say 5 hours). 
+
+Solution - 
+In hive we can address this problem by setting the following configuration settings, in the job running the join query
+ hive.skewjoin.key
+Default value = 100000
+The value of this property determines which key is a skew key. During join for any particular key if the number of rows is more than this specified number, then that key is considered as a skew join key.
+
+hive.skewjoin.mapjoin.map.tasks
+Default value = 10000
+To set the number of map tasks to use in the map join job to perform the skew join. This property needs to be used in association with the hive.skewjoin.mapjoin.min.split.
+
+hive.skewjoin.mapjoin.min.split
+Default value = 33554432
+To set the minimum split size and hence calculate the maximum number of mappers to be used for the map join job for a skew join. This property should be used with hive.skewjoin.mapjoin.map.tasks for an efficient control.
+
+================================
+built in function;
+show functions
+
+SHOW FUNCTIONSâ€“ lists Hive functions and operators
+DESCRIBE FUNCTION [function name]â€“ displays short description of the function
+DESCRIBE FUNCTION EXTENDED [function name]â€“ access extended description of the function
+
+Example;describe function extended initcap
+
+Types of Hive Functions
+
+    UDFâ€“ is a function that takes one or more columns from a row as argument and returns a single value or object. Eg: concat(col1, col2)
+    UDTFâ€” takes zero or more inputs and and produces multiple columns or rows of output. Eg: explode()
+    Macrosâ€” a function that uses other Hive functions.
+
+- See more at: https://www.qubole.com/resources/cheatsheet/hive-function-cheat-sheet/#sthash.o4A8logL.dpuf
+
+Built-In Functions
+
+Hive supports the following built-in functions:
+Return Type 	Signature 	Description
+BIGINT 	round(double a) 	It returns the rounded BIGINT value of the double.
+BIGINT 	floor(double a) 	It returns the maximum BIGINT value that is equal or less than the double.
+BIGINT 	ceil(double a) 	It returns the minimum BIGINT value that is equal or greater than the double.
+double 	rand(), rand(int seed) 	It returns a random number that changes from row to row.
+string 	concat(string A, string B,...) 	It returns the string resulting from concatenating B after A.
+string 	substr(string A, int start) 	It returns the substring of A starting from start position till the end of string A.
+string 	substr(string A, int start, int length) 	It returns the substring of A starting from start position with the given length.
+string 	upper(string A) 	It returns the string resulting from converting all characters of A to upper case.
+string 	ucase(string A) 	Same as above.
+string 	lower(string A) 	It returns the string resulting from converting all characters of B to lower case.
+string 	lcase(string A) 	Same as above.
+string 	trim(string A) 	It returns the string resulting from trimming spaces from both ends of A.
+string 	ltrim(string A) 	It returns the string resulting from trimming spaces from the beginning (left hand side) of A.
+string 	rtrim(string A) 	rtrim(string A) It returns the string resulting from trimming spaces from the end (right hand side) of A.
+string 	regexp_replace(string A, string B, string C) 	It returns the string resulting from replacing all substrings in B that match the Java regular expression syntax with C.
+int 	size(Map<K.V>) 	It returns the number of elements in the map type.
+int 	size(Array<T>) 	It returns the number of elements in the array type.
+value of <type> 	cast(<expr> as <type>) 	It converts the results of the expression expr to <type> e.g. cast('1' as BIGINT) converts the string '1' to it integral representation. A NULL is returned if the conversion does not succeed.
+string 	from_unixtime(int unixtime) 	convert the number of seconds from Unix epoch (1970-01-01 00:00:00 UTC) to a string representing the timestamp of that moment in the current system time zone in the format of "1970-01-01 00:00:00"
+string 	to_date(string timestamp) 	It returns the date part of a timestamp string: to_date("1970-01-01 00:00:00") = "1970-01-01"
+int 	year(string date) 	It returns the year part of a date or a timestamp string: year("1970-01-01 00:00:00") = 1970, year("1970-01-01") = 1970
+int 	month(string date) 	It returns the month part of a date or a timestamp string: month("1970-11-01 00:00:00") = 11, month("1970-11-01") = 11
+int 	day(string date) 	It returns the day part of a date or a timestamp string: day("1970-11-01 00:00:00") = 1, day("1970-11-01") = 1
+string 	get_json_object(string json_string, string path) 	It extracts json object from a json string based on json path specified, and returns json string of the extracted json object. It returns NULL if the input json string is invalid.
+
+===========================avro format========================
+
+create table olympic_avro
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat'
+OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+tblproperties ('avro.schema.literal'='{
+"name": "my_record",
+"type": "record",
+"fields": [
+{"name":"athelete", "type":"string"},
+{"name":"age", "type":"int"},
+{"name":"country", "type":"string"},
+{"name":"year", "type":"string"},
+{"name":"closing", "type":"string"},
+{"name":"sport", "type":"string"},
+{"name":"gold", "type":"int"},
+{"name":"silver", "type":"int"},
+{"name":"bronze", "type":"int"},
+{"name":"total", "type":"int"}
+]}');
+
+
+create tableolympic(athelete STRING,age INT,country STRING,year STRING,closing STRING,sport STRING,gold INT,silver INT,bronzeINT,total INT) row format delimited fields terminated by '\t' stored as textfile;
+
+insert overwrite table olympic_avro select * from olympic limit 20;
+
+Handling NULL Values in Avro Table:
+
+create table olympic_avro1
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat'
+OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+tblproperties ('avro.schema.literal'='{
+"namespace":"com.example.avro",
+"name": "my_record",
+"type": "record",
+"fields": [
+{"name":"athelete", "type":["string","null"],"default":null},
+{"name":"age", "type":["int","null"],"default":0},
+{"name":"country", "type":["string","null"],"default":null},
+{"name":"year", "type":["string","null"],"default":null},
+{"name":"closing", "type":["string","null"],"default":null},
+{"name":"sport", "type":["string","null"],"default":null},
+{"name":"gold", "type":["int","null"],"default":0},
+{"name":"silver", "type":["int","null"],"default":0},
+{"name":"bronze", "type":["int","null"],"default":0},
+{"name":"total", "type":["int","null"],"default":0}
+]}');
+
+http://localhost:50070/explorer.html#/user/hive/warehouse/olympic_avro
+
+
+=====================
+json data for hive
+
+{"Foo":"ABC","Bar":"20090101100000","Quux":{"QuuxId":1234,"QuuxName":"Sam"}}
+	
+CREATE TABLE json_table ( json string );
+LOAD DATA INPATH  '/user/cloudera/a.json' INTO TABLE json_table;
+select * from json_table
+select get_json_object(json_table.json, '$') from json_table; 
+select get_json_object(json_table.json, '$.Foo') as foo, 
+       get_json_object(json_table.json, '$.Bar') as bar,
+       get_json_object(json_table.json, '$.Quux.QuuxId') as qid,
+       get_json_object(json_table.json, '$.Quux.QuuxName') as qname
+from json_table;
+create table f as select get_json_object(json_table.json, '$.Foo') as foo, 
+       get_json_object(json_table.json, '$.Bar') as bar,
+       get_json_object(json_table.json, '$.Quux.QuuxId') as qid,
+       get_json_object(json_table.json, '$.Quux.QuuxName') as qname
+from json_table;
+select * from f;
+
+json tuple;
+
+select v.foo, v.bar, v.quux, v.qid 
+from json_table jt
+     LATERAL VIEW json_tuple(jt.json, 'Foo', 'Bar', 'Quux', 'Quux.QuuxId') v
+     as foo, bar, quux, qid;
+
+comoplex json format--please refer //http://thornydev.blogspot.in/2013/07/querying-json-records-via-hive.html//
+
+
+======================trashfiles time set======================
+
+
+Fs.timre.interval and checkoint
+/etc/hadoop/conf/core-site.xml
+to change the time interval for trashed files
+
+<property>
+<name>fs.trash.interval</name>
+<value>5</value>
+</property>
+
+<property>
+<name>fs.trash.checkpoint.interval</name>
+<value>3</value>
+</property>
+
+=========+++++++++++++++++++interview Questions+++++++++++++++++++========================
+
+1) I do not need the index created in the first question anymore. How can I delete the above index named index_bonuspay?
+
+DROP INDEX index_bonuspay ON employee;
+
+2) Suppose that I want to monitor all the open and aborted transactions in the system along with the transaction id and the transaction state. Can this be achieved using Apache Hive?
+
+Hive 0.13.0 and above version support SHOW TRANSACTIONS command that helps administrators monitor various hive transactions.
+
+3) What is the use of Hcatalog?
+
+Hcatalog can be used to share data structures with external systems. Hcatalog provides access to hive metastore to users of other tools on Hadoop so that they can read and write data to hiveâ€™s data warehouse.
+
+4) Write a query to rename a table Student to Student_New.
+
+Alter Table Student RENAME to Student_New
+
+5) Where is table data stored in Apache Hive by default?
+
+hdfs: //namenode_server/user/hive/warehouse
+
+6) difference between partitioning and bucketing.
+
+artitioning data is often used for distributing load horizontally, this has performance benefit, and helps in organizing data in a logical fashion. Example: if we are dealing with a large employee table and often run queries with WHERE clauses that restrict the results to a particular country or department . For a faster query response Hive table can be PARTITIONED BY (country STRING, DEPT STRING). Partitioning tables changes how Hive structures the data storage and Hive will now create subdirectories reflecting the partitioning structure like
+
+    .../employees/country=ABC/DEPT=XYZ.
+
+If query limits for employee from country=ABC, it will only scan the contents of one directory country=ABC. This can dramatically improve query performance, but only if the partitioning scheme reflects common filtering. Partitioning feature is very useful in Hive, however, a design that creates too many partitions may optimize some queries, but be detrimental for other important queries. Other drawback is having too many partitions is the large number of Hadoop files and directories that are created unnecessarily and overhead to NameNode since it must keep all metadata for the file system in memory.
+
+Bucketing is another technique for decomposing data sets into more manageable parts. For example, suppose a table using date as the top-level partition and employee_id as the second-level partition leads to too many small partitions. Instead, if we bucket the employee table and use employee_id as the bucketing column, the value of this column will be hashed by a user-defined number into buckets. Records with the same employee_id will always be stored in the same bucket. Assuming the number of employee_id is much greater than the number of buckets, each bucket will have many employee_id. While creating table you can specify like CLUSTERED BY (employee_id) INTO XX  BUCKETS; where XX is the number of buckets . Bucketing has several advantages. The number of buckets is fixed so it does not fluctuate with data. If two tables are bucketed by employee_id, Hive can create a logically correct sampling. Bucketing also aids in doing efficient map-side joins etc.
+
+7) Explain about the different types of partitioning in Hive?
+
+static partition and dynamic partition
+
+8) Write a hive query to view all the databases whose name begins with â€œdbâ€
+
+SHOW DATABASES LIKE â€˜db.*â€™
+
+9) Differentiate between describe and describe extended.
+
+Describe database/schema- This query displays the name of the database, the root location on the file system and comments if any.
+
+Describe extended database/schema- Gives the details of the database or schema in a detailed manner.
+
+10) Is it possible to overwrite Hadoop MapReduce configuration in Hive?
+
+Yes, hadoop MapReduce configuration can be overwritten by changing the hive conf settings file.
+
+11) Explain about SORT BY, ORDER BY, DISTRIBUTE BY and CLUSTER BY in Hive.
+
+https://saurzcode.in/2015/01/hive-sort-order-distribute-cluster/
+12) How can you prevent a large job from running for a long time?
+
+This can be achieved by setting the MapReduce jobs to execute in strict mode set hive.mapred.mode=strict;
+
+The strict mode ensures that the queries on partitioned tables cannot execute without defining a WHERE clause.
+
+13) What is a Hive Metastore?
+
+Hive Metastore is a central repository that stores metadata in external database.
+
+14) Are multiline comments supported in Hive?
+
+No
+
+15) How data transfer happens from HDFS to Hive?
+
+If data is already present in HDFS then the user need not LOAD DATA that moves the files to the /user/hive/warehouse/. So the user just has to define the table using the keyword external that creates the table definition in the hive metastore.
+
+Create external table table_name (
+id int,
+myfields string
+)
+
+location '/my/location/in/hdfs';
+
+16) In case of embedded Hive, can the same metastore be used by multiple users?
+
+We cannot use metastore in sharing mode. It is suggested to use standalone real database like PostGreSQL and MySQL.
+
+17)  The partition of hive table has been modified to point to a new directory location. Do I have to move the data to the new location or the data will be moved automatically to the new location?
+
+Changing the point of partition will not move the data to the new location. It has to be moved manually to the new location from the old one.
+
+18)  What will be the output of cast (â€˜XYZâ€™ as INT)?
+
+It will return a NULL value.
+
+19) What are the different components of a Hive architecture?
+
+Hive Architecture consists of a â€“
+
+    User Interface â€“ UI component of the Hive architecture calls the execute interface to the driver.
+    Driver create a session handle to the query and sends the query to the compiler to generate an execution plan for it.
+    Metastore - Sends the metadata to the compiler for the execution of the query on receiving the sendMetaData request.
+    Compiler- Compiler generates the execution plan which is a DAG of stages where each stage is either a metadata operation, a map or reduce job or an operation on HDFS.
+    Execute Engine- Execution engine is responsible for submitting each of these stages to the relevant components by managing the dependencies between the various stages in the execution plan generated by the compiler.
+20) What happens on executing the below query? After executing the below query, if you modify   the column â€“how will the changes be tracked?
+
+Hive> CREATE INDEX index_bonuspay ON TABLE employee (bonus)
+
+AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler';
+
+The query creates an index named index_bonuspay which points to the bonus column in the employee table. Whenever the value of bonus is modified it will be stored using an index value.
+Scenario based or Real-Time Interview Questions on Hadoop Hive
+
+    How will you optimize Hive performance?
+    Will the reducer work or not if you use â€œLimit 1â€ in any HiveQL query?
+    Why you should choose Hive instead of Hadoop MapReduce?
+    Explain the difference between SQL and Apache Hive.
+    Why mapreduce will not run if you run select * from table in hive?
+21) Explain about the different types of join in Hive.
+
+22) Explain what is Hive?
+
+Hive is an ETL and Data warehousing tool developed on top of Hadoop Distributed File System (HDFS). It is a data warehouse framework for querying and analysis of data that is stored in HDFS. Hive is an open-source-software that lets programmers analyze large data sets on Hadoop.
+
+23) When to use Hive?
+
+    Hive is useful when making data warehouse applications
+    When you are dealing with static data instead of dynamic data
+    When application is on high latency (high response time)
+    When a large data set is maintained
+    When we are using queries instead of scripting
+
+24) Mention what are the different modes of Hive?
+
+Depending on the size of data nodes in Hadoop, Hive can operate in two modes.
+
+These modes are,
+
+    Local mode
+    Map reduce mode
+
+26) Mention when to use Map reduce mode?
+
+Map reduce mode is used when,
+
+    It will perform on large amount of data sets and query going to execute in a parallel way
+    Hadoop has multiple data nodes, and data is distributed across different node we use Hive in this mode
+    Processing large data sets with better performance needs to be achieved
+
+27) Mention key components of Hive Architecture?
+
+Key components of Hive Architecture includes,
+
+    User Interface
+    Compiler
+    Metastore
+    Driver
+    Execute Engine
+
+28) Mention what are the different types of tables available in Hive?
+
+There are two types of tables available in Hive.
+
+    Managed table: In managed table, both the data and schema are under control of Hive
+    External table: In the external table, only the schema is under the control of Hive.
+
+29) Explain what is Metastore in Hive?
+
+Metastore is a central repository in Hive.  It is used for storing schema information or metadata in the external database
+
+30) Mention what Hive is composed of ?
+
+Hive consists of 3 main parts,
+
+    Hive Clients
+    Hive Services
+    Hive Storage and Computing
+
+31) Mention what are the type of database does Hive support ?
+
+For single user metadata storage, Hive uses derby database and for multiple user Metadata or shared Metadata case Hive uses MYSQL.
+
+32) Mention Hive default read and write classes?
+
+Hive default read and write classes are
+
+    TextInputFormat/HiveIgnoreKeyTextOutputFormat
+    SequenceFileInputFormat/SequenceFileOutputFormat
+
+33) Mention what are the different modes of Hive?
+
+Different modes of Hive depends on the size of data nodes in Hadoop.
+
+These modes are,
+
+    Local mode
+    Map reduce mode
+
+34) Why is Hive not suitable for OLTP systems?
+
+Hive is not suitable for OLTP systems because it does not provide insert and update function at the row level.
+
+35) Mention what is the difference between Hbase and Hive?
+
+Difference between Hbase and Hive is,
+
+    Hive enables most of the SQL queries, but HBase does not allow SQL queries
+    Hive does not support record level insert, update, and delete operations on table
+    Hive is a data warehouse framework whereas HBase is NoSQL database
+    Hive run on the top of MapReduce, HBase runs on the top of HDFS
+
+36) Explain what is a Hive variable? What for we use it?
+
+Hive variable is created in the Hive environment that can be referenced by Hive scripts. It is used to pass some values to the hive queries when the query starts executing.
+
+37) Mention what is ObjectInspector functionality in Hive?
+
+ObjectInspector functionality in Hive is used to analyze the internal structure of the columns, rows, and complex objects.  It allows to access the internal fields inside the objects.
+
+38) Mention what is (HS2) HiveServer2?
+
+It is a server interface that performs following functions.
+
+    It allows remote clients to execute queries against Hive
+    Retrieve the results of mentioned queries
+
+Some advanced features Based on Thrift RPC in its latest version include
+
+    Multi-client concurrency
+    Authentication
+39) Mention what Hive query processor does?
+
+Hive query processor convert graph of MapReduce jobs with the execution time framework.  So that the jobs can be executed in the order of dependencies.
+
+40) Mention what are the components of a Hive query processor?
+
+The components of a Hive query processor include,
+
+    Logical Plan Generation
+    Physical Plan Generation
+    Execution Engine
+    Operators
+    UDFâ€™s and UDAFâ€™s
+    Optimizer
+    Parser
+    Semantic Analyzer
+    Type Checking
+
+41) Mention what is Partitions in Hive?
+
+Hive organizes tables into partitions.
+
+    It is one of the ways of dividing tables into different parts based on partition keys.
+    Partition is helpful when the table has one or more Partition keys.
+    Partition keys are basic elements for determining how the data is stored in the table.
+42) Mention when to choose â€œInternal Tableâ€ and â€œExternal Tableâ€ in Hive?
+
+In Hive you can choose internal table,
+
+    If the processing data available in local file system
+    If we want Hive to manage the complete lifecycle of data including the deletion
+
+You can choose External table,
+
+    If processing data available in HDFS
+    Useful when the files are being used outside of Hive
+
+43) Mention if we can name view same as the name of a Hive tabl
+
+e?
+
+No. The name of a view must be unique compared to all other tables and as views present in the same database.
+
+44) Mention what are views in Hive?
+
+In Hive, Views are Similar to tables. They are generated based on the requirements.
+
+    We can save any result set data as a view in Hive
+    Usage is similar to as views used in SQL
+    All type of DML operations can be performed on a view
+
+45) Explain how Hive Deserialize and serialize the data?
+
+Usually, while read/write the data, the user first communicate with inputformat. Then it connects with Record reader to read/write record.  To serialize the data, the data goes to row. Here deserialized custom serde use object inspector to deserialize the data in fields.
+46) What is Buckets in Hive?
+
+    The data present in the partitions can be divided further into Buckets
+    The division is performed based on Hash of particular columns that is selected in the table.
+47) In Hive, how can you enable buckets?
+
+In Hive, you can enable buckets by using the following command,
+
+set.hive.enforce.bucketing=true;
+
+48) In Hive, can you overwrite Hadoop MapReduce configuration in Hive?
+
+Yes, you can overwrite Hadoop MapReduce configuration in Hive.
+
+49) Explain how can you change a column data type in Hive?
+
+You can change a column data type in Hive by using command,
+
+ALTER TABLE table_name CHANGE column_name column_name new_datatype;
+
+50) Mention what is the difference between order by and sort by in Hive?
+
+    SORT BY will sort the data within each reducer. You can use any number of reducers for SORT BY operation.
+    ORDER BY will sort all of the data together, which has to pass through one reducer. Thus, ORDER BY in hive uses a single
+
+51) Explain when to use explode in Hive?
+
+Hadoop developers sometimes take an array as input and convert into a separate table row. To convert complex data types into desired table formats, Hive use explode.
+
+52) Mention how can you stop a partition form being queried?
+
+You can stop a partition form being queried by using the ENABLE OFFLINE clause with ALTER TABLE statement.
+
+53)What is the need for custom Serde?
+
+Depending on the nature of data the user has, the inbuilt SerDe may not satisfy the format of the data. SO users need to write their own java code to satisfy their data format requirements.
+
+54)What are the three different modes in which hive can be run?
+
+    Local mode
+    Distributed mode
+    Pseudodistributed mode
+
+
+55) Why do we need Hive?
+
+Hive is a tool in Hadoop ecosystem which provides an interface to organize and query data in a databse like fashion and write SQL like queries. It is suitable for accessing and analyzing data in Hadoop using SQL syntax.
+
+56)Is there a date data type in Hive?
+
+Yes. The TIMESTAMP data types stores date in java.sql.timestamp format
+
+57) What are collection data types in Hive?
+
+There are three collection data types in Hive.
+
+    ARRAY
+    MAP
+    STRUCT
+
+58) Can hive queries be executed from script files? How?
+
+Using the source command.
+
+Example âˆ’
+
+Hive> source /path/to/file/file_with_query.hql
+
+59) What is the importance of .hiverc file?
+
+It is a file containing list of commands needs to run when the hive CLI starts. For example setting the strict mode to be true etc.
+
+60) What are the default record and field delimiter used for hive text files?
+
+The default record delimiter is âˆ’ \n
+
+And the filed delimiters are âˆ’ \001,\002,\003
+
+61) How can you delete the DBPROPERTY in Hive?
+
+There is no way you can delete the DBPROPERTY.
+
+62) What is the significance of the line
+
+set hive.mapred.mode = strict;
+
+It sets the mapreduce jobs to strict mode.By which the queries on partitioned tables can not run without a WHERE clause. This prevents very large job running for long time.
+
+
+67) How do you check if a particular partition exists?
+
+This can be done with following query
+
+SHOW PARTITIONS table_name PARTITION(partitioned_column=â€™partition_valueâ€™)
+
+68)Which java class handles the Input record encoding into files which store the tables in Hive?
+
+org.apache.hadoop.mapred.TextInputFormat
+Which java class handles the output record encoding into files which result from Hive queries?
+
+org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
+
+69) What is the significance of â€˜IF EXISTSâ€ clause while dropping a table?
+
+70)When we issue the command DROP TABLE IF EXISTS table_name
+
+Hive throws an error if the table being dropped does not exist in the first place.
+
+71)When you point a partition of a hive table to a new directory, what happens to the data?
+
+The data stays in the old location. It has to be moved manually.
+Write a query to insert a new column(new_col INT) into a hiev table (htab) at a position before an existing column (x_col)
+
+ALTER TABLE table_name
+CHANGE COLUMN new_col  INT
+BEFORE x_col
+
+72) Does the archiving of Hive tables give any space saving in HDFS?
+
+No. It only reduces the number of files which becomes easier for namenode to manage.
+How can you stop a partition form being queried?
+
+By using the ENABLE OFFLINE clause with ALTER TABLE atatement.
+
+
+73) What does the following query do?
+
+INSERT OVERWRITE TABLE employees
+PARTITION (country, state)
+SELECT ..., se.cnty, se.st
+FROM staged_employees se;
+
+It creates partition on table employees with partition values coming from the columns in the select clause. It is called Dynamic partition insert.
+
+
+74) How can Hive avoid mapreduce?
+
+If we set the property hive.exec.mode.local.auto to true then hive will avoid mapreduce to fetch query results.
+
+
+75) What is the difference between LIKE and RLIKE operators in Hive?
+
+The LIKE operator behaves the same way as the regular SQL operators used in select queries. Example âˆ’
+
+street_name like â€˜%Chiâ€™
+
+But the RLIKE operator uses more advance regular expressions which are available in java
+
+Example âˆ’ street_name RLIKE â€˜.*(Chi|Oho).*â€™ which will select any word which has either chi or oho in it.
+
+
+As part of Optimizing the queries in HIve, what should be the order of table size in a join query?
+
+In a join query the smallest table to be taken in the first position and largest table should be taken in the last position.
+
+ What is the usefulness of the DISTRIBUTED BY clause in Hive?
+
+It controls ho wthe map output is reduced among the reducers. It is useful in case of streaming data
+
+76) How will you convert the string â€™51.2â€™ to a float value in the price column?
+
+Select cast(price as FLOAT)
+
+
+77) What will be the result when you do cast(â€˜abcâ€™ as INT)?
+
+Hive will return NULL
+
+78) Can we LOAD data into a view?
+
+No. A view can not be the target of a INSERT or LOAD statement.
+
+
+78)What types of costs are associated in creating index on hive tables?
+
+Indexes occupies space and there is a processing cost in arranging the values of the column on which index is cerated.
+Give the command to see the indexes on a table.
+
+79) SHOW INDEX ON table_name
+
+This will list all the indexes created on any of the columns in the table table_name.
+
+80) The following statement failed to execute. What can be the cause?
+
+LOAD DATA LOCAL INPATH â€˜${env:HOME}/country/state/â€™
+OVERWRITE INTO TABLE address;
+
+The local inpath should contain a file and not a directory. The $env:HOME is a valid variable available in the hive environment.
+How do you specify the table creator name when creating a table in Hive?
+
+81)The TBLPROPERTIES clause is used to add the creator name while creating a table.
+
+The TBLPROPERTIES is added like âˆ’
+TBLPROPERTIES(â€˜creatorâ€™= â€˜Joanâ€™)
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&Practical Session &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+ <property>
+           <name>dfs.webhdfs.enabled</name>
+           <value>true</value>
+        </property>
+
+It seems that you need to install curl. For instance, on Ubuntu you could do it using
+$ sudo apt-get install curl
+
+On CentOS/Fedora/RedHat it would need to be using â€˜sudo yum installâ€™.
+https://bighadoop.wordpress.com/2013/06/02/hadoop-rest-api-webhdfs/
+
+===========to know more about .xml files=========
+/etc/hadoop/conf (open below file and understand more details)
+
+-rwxr-xr-x 1 root root  2375 Jun 16  2016 yarn-site.xml
+-rw-rw-r-- 1 root root  1546 Aug 10  2016 mapred-site.xml
+-rw-rw-r-- 1 root root  3739 Aug 10  2016 hdfs-site.xml
+-rw-rw-r-- 1 root root  2077 Oct 21 06:22 core-site.xml
+
