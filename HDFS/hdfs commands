@@ -1,0 +1,77 @@
+hdfs dfs -ls 
+hdfs dfs -mkdir ww
+hdfs dfs -touchz /ww/ttt
+hdfs dfs -mv spark/b.txt ww
+hdfs dfs -rm -R ww
+hdfs dfs -moveFromLocal /home/cloudera/Desktop/b.txt  /user/cloudera/jjll123/123
+hdfs dfs -put /home/cloudera/Desktop/hdfs.tar.gz  ww/dfs
+hdfs dfs -get /user/cloudera/jj /home/cloudera/Desktop/y
+hdfs dfs -moveToLocal /user/cloudera/jj /home/cloudera/Desktop/y
+hdfs dfs -moveFromLocal /home/cloudera/Desktop/b.txt  /user/cloudera/jjll123
+hdfs dfs -appendToFile /home/cloudera/Desktop/ss.txt  /user/cloudera/jjll
+hdfs dfs -getmerge /user/cloudera/jj* /home/cloudera/Desktop/getmeee
+hdfs dfs -cat /user/cloudera/jjll
+hdfs dfs -test -e /user/cloudera/jjll
+hdfs dfs -count /user/cloudera/jjll123
+
+chmod
+chown
+chgrp
+getmerge
+
+hadoop fs -cat hdfs:///user/cloudera/sq* | zgrep -c cloudera - count the records
+hadoop fs -cat hdfs:///user/cloudera/ee* | grep Pune --display actual data
+
+find
+truncate
+usage
+checksum
+expunge - to create trash checkpoint
+
+================================
+find and replace
+================================
+sed -i -e 's/vi/nandha/g' ee.txt
+sed-stream editor
+s/ - substitute
+/g refers to global
+================================
+Hadoop Archives (HAR)
+
+Hadoop Archives (HAR) offers an effective way to deal with the small files problem. This post will explain –
+
+The problem with small files
+What is HAR?
+Limitations of HAR files
+
+
+The problem with small files
+
+Hadoop works best with big files and small files are handled inefficiently in HDFS.  As we know, Namenode holds the metadata information in memory for all the files stored in HDFS. Let’s say we have a file in HDFS which is 1 GB in size and the Namenode will store metadata information of the file – like file name, creator, created time stamp, blocks, permissions etc.
+
+Now assume we decide to split this 1 GB file in to 1000 pieces and store all 100o “small” files in HDFS. Now Namenode has to store metadata information of 1000 small files in memory. This is not very efficient – first it takes up a lot of memory and second soon Namenode will become a bottleneck as it is trying to manage a lot of data.
+
+What is HAR?
+
+Hadoop Archives or HAR is an archiving facility that packs files in to HDFS blocks efficiently and hence HAR can be used to tackle the small files problem in Hadoop. HAR is created from a collection of files and the archiving tool (a simple command) will run a MapReduce job to process the input files in parallel and create an archive file.
+
+HAR command
+
+
+ hadoop archive -archiveName myhar.har -p /user/hive/warehouse/smallfiles /user/hive/warehouse
+
+
+Once a .har file is created, you can do a listing on the .har file and you will see it is made up of index files and part files. Part files are nothing but the original files concatenated together in to a big file. Index files are look up files which is used to look up the individual small files inside the big part files.
+
+hadoop fs -ls /output/location/myhar.har
+
+/output/location/myhar.har/_index
+/output/location/myhar.har/_masterindex
+/output/location/myhar.har/part-0
+
+Limitations of HAR files
+
+Once an archive file is created, you can not update the file to add or remove files. In other words, har files are immutable.
+Archive file will have a copy of all the original files so once a .har is created it will take as much space as the original files. Don’t mistake .har files for compressed files.
+When a .har file is given as an input to MapReduce job, the small files inside the .har file will be processed individually by separate mappers which is inefficient.
+
